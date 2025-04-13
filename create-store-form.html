@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -17,6 +18,7 @@
             margin: 0;
             padding: 1rem;
         }
+
         .container {
             max-width: 448px;
             width: 100%;
@@ -27,6 +29,7 @@
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
             border: 1px solid rgba(255, 255, 255, 0.1);
         }
+
         h2 {
             text-align: center;
             font-size: 2rem;
@@ -36,16 +39,19 @@
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
         }
+
         .form-group {
             display: flex;
             flex-direction: column;
             gap: 10px;
         }
+
         label {
             font-size: 0.875rem;
             font-weight: 500;
             color: #e5e7eb;
         }
+
         input {
             padding: 10px;
             border-radius: 10px;
@@ -55,10 +61,12 @@
             font-size: 1rem;
             outline: none;
         }
+
         input:focus {
             border-color: #6b7280;
             box-shadow: 0 0 3px rgba(107, 114, 128, 0.5);
         }
+
         .btn {
             padding: 0.75rem;
             border-radius: 0.75rem;
@@ -72,14 +80,17 @@
             width: 100%;
             transition: transform 0.3s ease;
         }
+
         .btn:hover {
             transform: scale(1.05);
         }
+
         .message {
             text-align: center;
             margin-top: 1rem;
             font-weight: 600;
         }
+
         #logo-preview {
             display: none;
             margin-top: 10px;
@@ -88,6 +99,7 @@
         }
     </style>
 </head>
+
 <body>
     <div class="container">
         <h2>Setup Store</h2>
@@ -105,11 +117,11 @@
                 <input type="text" id="store-address" placeholder="Enter your store address" required>
             </div>
             <div class="form-group">
-                <label for="tax-id">Tax ID</label>
+                <label for="tax-id">Tax ID (10 digits)</label>
                 <input type="text" id="tax-id" placeholder="Enter your Tax ID" required pattern="\d{10}">
             </div>
             <div class="form-group">
-                <label for="gst-number">GST Number</label>
+                <label for="gst-number">GST Number (15 digits)</label>
                 <input type="text" id="gst-number" placeholder="Enter your GST Number" required pattern="\d{15}">
             </div>
             <div class="form-group">
@@ -126,43 +138,66 @@
         </form>
     </div>
     <script>
-        document.addEventListener("DOMContentLoaded", function() {
+        document.addEventListener("DOMContentLoaded", function () {
             const API_BASE_URL = 'http://localhost:3000';
             const storeForm = document.getElementById("storeForm");
             const messageElement = document.getElementById("message");
-    
+
             // Handle logo image preview
-            document.getElementById("logo-image").addEventListener("change", function(event) {
+            document.getElementById("logo-image").addEventListener("change", function (event) {
                 const file = event.target.files[0];
                 if (file) {
                     const reader = new FileReader();
-                    reader.onload = function(e) {
+                    reader.onload = function (e) {
                         document.getElementById("logo-preview").src = e.target.result;
                         document.getElementById("logo-preview").style.display = "block";
                     };
                     reader.readAsDataURL(file);
                 }
             });
-    
+
             // Handle form submission
-            storeForm.addEventListener("submit", async function(event) {
+            storeForm.addEventListener("submit", async function (event) {
                 event.preventDefault();
-                
+
                 const submitButton = storeForm.querySelector('button[type="submit"]');
                 submitButton.disabled = true;
                 submitButton.innerHTML = 'Registering...';
-    
-                const storeData = {
-                    seller: document.getElementById("seller").value,
-                    storeName: document.getElementById("store-name").value,
-                    storeAddress: document.getElementById("store-address").value,
-                    taxId: document.getElementById("tax-id").value,
-                    gstNumber: document.getElementById("gst-number").value,
-                    description: document.getElementById("description").value,
-                    logoImage: document.getElementById("logo-preview").src || null
-                };
-    
+
+                const seller = JSON.parse(localStorage.getItem('seller'));
+                let logoImage = '';
+
                 try {
+                    // Handle logo upload if file exists
+                    const logoFile = document.getElementById("logo-image").files[0];
+                    if (logoFile) {
+                        const formData = new FormData();
+                        formData.append('image', logoFile);
+
+                        const uploadResponse = await fetch(`${API_BASE_URL}/api/upload`, {
+                            method: 'POST',
+                            body: formData
+                        });
+
+                        if (!uploadResponse.ok) {
+                            throw new Error('Failed to upload logo');
+                        }
+
+                        const uploadData = await uploadResponse.json();
+                        logoImage = uploadData.imageUrl;
+                    }
+
+                    const storeData = {
+                        seller: seller.id,
+                        storeName: document.getElementById("store-name").value,
+                        storeAddress: document.getElementById("store-address").value,
+                        taxId: document.getElementById("tax-id").value,
+                        gstNumber: document.getElementById("gst-number").value,
+                        description: document.getElementById("description").value,
+                        logoImage: logoImage,
+                        storeUrl: document.getElementById("store-name").value.toLowerCase().replace(/\s+/g, '-')
+                    };
+
                     const response = await fetch(`${API_BASE_URL}/api/stores`, {
                         method: 'POST',
                         headers: {
@@ -170,31 +205,51 @@
                         },
                         body: JSON.stringify(storeData)
                     });
-    
+
                     const data = await response.json();
-    
+
                     if (response.ok) {
                         messageElement.textContent = "Store registration successful!";
                         messageElement.style.color = "#4ade80";
-                        
                         localStorage.setItem("currentStore", JSON.stringify(data.store));
-                        
-                        setTimeout(() => {
-                            window.location.href = "adminseller.html";
-                        }, 1500);
+                        window.location.href = "adminseller.html";
                     } else {
                         throw new Error(data.error || 'Registration failed');
                     }
                 } catch (error) {
                     console.error('Error:', error);
-                    messageElement.textContent = error.message;
+                    messageElement.textContent = error.message.includes('E11000') ?
+                        'Store name already exists. Please choose a different name.' :
+                        error.message;
                     messageElement.style.color = "#f87171";
                 } finally {
                     submitButton.disabled = false;
                     submitButton.innerHTML = 'Register';
                 }
             });
+
+            // Add this to your DOMContentLoaded event listener
+            document.getElementById("store-name").addEventListener("input", async function () {
+                const storeName = this.value;
+                if (storeName.length < 3) return;
+
+                try {
+                    const response = await fetch(`${API_BASE_URL}/api/stores/check-name?name=${encodeURIComponent(storeName)}`);
+                    const data = await response.json();
+
+                    if (data.exists) {
+                        messageElement.textContent = "Store name already exists. Please choose a different name.";
+                        messageElement.style.color = "#f87171";
+                    } else {
+                        messageElement.textContent = "Store name is available!";
+                        messageElement.style.color = "#4ade80";
+                    }
+                } catch (error) {
+                    console.error('Error checking store name:', error);
+                }
+            });
         });
     </script>
 </body>
+
 </html>

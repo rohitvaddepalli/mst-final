@@ -1,108 +1,248 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>My Store</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
         body {
             font-family: 'Inter', sans-serif;
             background-image: linear-gradient(to bottom right, #1f2937, #5b21b6, #000000);
             color: white;
-            height: 100vh;
+            min-height: 100vh;
             margin: 0;
             padding: 0;
         }
 
         header {
-            color: #ffffff;
             background: rgba(255, 255, 255, 0.05);
-            position: absolute;
             padding: 20px;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
             position: relative;
         }
 
+        .header-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
         h1 {
-            position: absolute;
-            margin: 10px;
-            display: inline-block;
+            margin: 0;
+            font-size: 1.8rem;
+            background: linear-gradient(to right, #8b5cf6, #3b82f6);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
         }
 
         h2 {
             text-align: center;
-            font-size: 30px;
-            margin-top: 15px;
+            font-size: 2rem;
+            margin: 20px 0;
+            background: linear-gradient(to right, #8b5cf6, #3b82f6);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
         }
 
         .header-buttons {
-            position: absolute;
-            margin-top: 25px;
-            right: 50px;
-            
+            display: flex;
+            gap: 15px;
         }
 
         .header-buttons a {
-            padding: 10px 15px;
-            margin-left: 10px;
-            font-weight: bold;
+            padding: 10px 20px;
+            font-weight: 600;
             text-decoration: none;
             color: white;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .header-buttons a:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .main-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
         }
 
         .store-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-            gap: 20px;
-            padding: 20px;
-            max-width: 1200px;
-            margin: 20px auto;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 25px;
+            padding: 20px 0;
         }
 
         .store-card {
-            color: white;
             background: rgba(255, 255, 255, 0.1);
-            border-radius: 10px;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-            padding: 40px 10px;
+            border-radius: 12px;
+            padding: 25px;
             text-align: center;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.05);
         }
-        .store-card a{
+
+        .store-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .store-card a {
             text-decoration: none;
             color: white;
-            font-weight: bold;
-            font-size: 18px;
+            font-weight: 600;
+            font-size: 1.2rem;
+            display: block;
+            margin-top: 15px;
+        }
+
+        .store-card p {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 0.9rem;
+            margin-top: 10px;
+        }
+
+        .loading-message,
+        .empty-message {
+            grid-column: 1 / -1;
+            text-align: center;
+            padding: 40px;
+            font-size: 1.1rem;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        @media (max-width: 768px) {
+            .header-content {
+                flex-direction: column;
+                gap: 15px;
+            }
+
+            .header-buttons {
+                width: 100%;
+                justify-content: center;
+                flex-wrap: wrap;
+            }
+
+            .store-grid {
+                grid-template-columns: 1fr;
+            }
         }
     </style>
 </head>
+
 <body>
     <header>
-        <h1>My Store</h1>
-        <div class="header-buttons">
-            <a href="customer.html">Home</a>
-            <a href="customer.html">Stores</a>
-            <a href="cart.html">Cart</a>
-            <a href="checkout.html">Checkout</a>
+        <div class="header-content">
+            <h1 id="store-header">My Store</h1>
+            <div class="header-buttons">
+                <a href="customer.html">Home</a>
+                <a href="cart.html">Cart</a>
+            </div>
         </div>
-        <h2>Welcome to My Store</h2>
     </header>
 
-    <div class="store-grid">
-        <div class="store-card">
-            <a href="store_customer.html">Store-1</a>
-        </div>
-        <div class="store-card">
-            <a href="store_customer.html">Store-2</a>
-        </div>
-        <div class="store-card">
-            <a href="store_customer.html">Store-3</a>
-        </div>
-        <div class="store-card">
-            <a href="store_customer.html">Store-4</a>
-        </div>
-        <div class="store-card">
-            <a href="store_customer.html">Store-5</a>
+    <div class="main-content">
+        <h2>Featured Stores</h2>
+        <div class="store-grid" id="store-grid">
+            <!-- Stores will be loaded here dynamically -->
         </div>
     </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", async () => {
+            const API_BASE_URL = 'http://localhost:3000';
+            const storeGrid = document.getElementById('store-grid');
+            const storeHeader = document.getElementById('store-header');
+
+            // Fetch all stores from the server
+            async function fetchStores() {
+                try {
+                    storeGrid.innerHTML = '<div class="loading-message">Loading stores...</div>';
+
+                    const response = await fetch(`${API_BASE_URL}/api/stores`);
+                    if (!response.ok) throw new Error('Failed to fetch stores');
+
+                    const stores = await response.json();
+
+                    if (stores.length === 0) {
+                        storeGrid.innerHTML = '<div class="empty-message">No stores available at the moment. Please check back later.</div>';
+                        return [];
+                    }
+
+                    return stores;
+                } catch (error) {
+                    console.error('Error fetching stores:', error);
+                    storeGrid.innerHTML = `<div class="empty-message">Error loading stores: ${error.message}</div>`;
+                    return [];
+                }
+            }
+
+            // Render stores to the grid
+            async function renderStores() {
+                const stores = await fetchStores();
+
+                if (stores.length === 0) return;
+
+                storeGrid.innerHTML = '';
+
+                stores.forEach(store => {
+                    const storeCard = document.createElement('div');
+                    storeCard.className = 'store-card';
+
+                    // Create a URL-friendly version of the store name
+                    const storeUrl = store.storeName.toLowerCase().replace(/\s+/g, '-');
+
+                    storeCard.innerHTML = `
+                        ${store.logoImage ?
+                            `<img src="${store.logoImage}" alt="${store.storeName}" 
+                                style="width:100px;height:100px;border-radius:50%;object-fit:cover;
+                                margin:0 auto 15px;display:block;border:2px solid rgba(255,255,255,0.1);">` :
+                            `<div style="width:100px;height:100px;border-radius:50%;background:rgba(139, 92, 246, 0.3);
+                                margin:0 auto 15px;display:flex;align-items:center;justify-content:center;
+                                font-size:2rem;font-weight:bold;border:2px solid rgba(255,255,255,0.1);">
+                                ${store.storeName.charAt(0).toUpperCase()}
+                            </div>`
+                        }
+                        <a href="store_customer.html?store=${store._id}">${store.storeName}</a>
+                        ${store.description ? `<p>${store.description}</p>` : ''}
+                    `;
+
+                    storeGrid.appendChild(storeCard);
+                });
+            }
+
+            // Update the header with the first store's name if available
+            async function updateHeader() {
+                try {
+                    const response = await fetch(`${API_BASE_URL}/api/stores/latest`);
+                    if (!response.ok) return;
+
+                    const store = await response.json();
+                    if (store.storeName) {
+                        storeHeader.textContent = store.storeName;
+                    }
+                } catch (error) {
+                    console.error('Error updating header:', error);
+                }
+            }
+
+            // Initialize
+            renderStores();
+            updateHeader();
+        });
+    </script>
 </body>
+
 </html>

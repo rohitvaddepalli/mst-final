@@ -222,6 +222,7 @@
                     <li class="nav-item" data-section="analytics">Analytics</li>
                 </ul>
             </nav>
+            <button id="logout-btn" class="btn" style="margin-top: auto; margin-bottom: 20px;">Logout</button>
         </div>
 
         <!-- Store Front Section -->
@@ -252,6 +253,7 @@
                 <thead>
                     <tr>
                         <th>Product</th>
+                        <th>Description</th>
                         <th>Price</th>
                         <th>Stock</th>
                         <th>Actions</th>
@@ -260,6 +262,7 @@
                 <tbody>
                     <tr>
                         <td>Handmade Soap</td>
+                        <td>Natural ingredients</td>
                         <td>₹50.00</td>
                         <td>50</td>
                         <td>
@@ -274,6 +277,10 @@
                 <div class="form-group">
                     <label for="product-name">Product Name</label>
                     <input type="text" id="product-name" placeholder="Product Name" />
+                </div>
+                <div class="form-group">
+                    <label for="product-description">Product Description</label>
+                    <input type="text" id="product-description" placeholder="Product Description" />
                 </div>
                 <div class="form-group">
                     <label for="product-price">Price</label>
@@ -293,23 +300,45 @@
 
         <!-- Orders Section -->
         <section id="orders" class="section" aria-labelledby="orders-heading">
-            <h2 id="orders-heading">Orders</h2>
-            <p>This section will display the orders of the products.</p>
+            <h2 id="orders-heading" style="margin: 70px;">Orders</h2>
+            <table class="product-table" id="orders-table">
+                <thead>
+                    <tr>
+                        <th>Order ID</th>
+                        <th>Product</th>
+                        <th>Customer</th>
+                        <th>Price</th>
+                        <th>Status</th>
+                        <th>Date</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="orders-body">
+                    <!-- Orders will be populated here -->
+                </tbody>
+            </table>
         </section>
 
         <!-- Analytics Section -->
         <section id="analytics" class="section" aria-labelledby="analytics-heading">
-            <h2 id="analytics-heading">Analytics</h2>
-            <p>This section will display the analytics.</p>
+            <h2 id="analytics-heading" style="margin: 70px;">Analytics</h2>
+            <div class="analytics-content">
+                <!-- Analytics content will go here -->
+                <p>Analytics data will be displayed here.</p>
+            </div>
         </section>
-
     </div>
 
     <script>
-        document.addEventListener("DOMContentLoaded", () => {
-            const API_BASE_URL = 'http://localhost:3000';
-            let products = [];
-            let currentStore = null;
+        const API_BASE_URL = 'http://localhost:3000';
+        let products = [];
+        let currentStore = null;
+        let orders = [];
+        document.addEventListener("DOMContentLoaded", async () => {
+
+            await loadStoreData();
+            fetchProducts();
+
             function showSection(sectionId) {
                 document.querySelectorAll(".section").forEach((section) => {
                     section.classList.remove("active");
@@ -317,22 +346,38 @@
                 document.getElementById(sectionId).classList.add("active");
             }
 
+            // Add this to your existing script section
+            document.getElementById('logout-btn').addEventListener('click', () => {
+                window.location.href = 'index.html';
+            });
+
             // Load store data from localStorage or fetch from server
             async function loadStoreData() {
-                // Try to get from localStorage first
-                const storedStore = localStorage.getItem('currentStore');
-                if (storedStore) {
-                    currentStore = JSON.parse(storedStore);
-                    updateStoreDisplay();
-                    return;
-                }
-
-                // If not in localStorage, try to fetch from server
                 try {
-                    const response = await fetch(`${API_BASE_URL}/api/stores/latest`);
+                    // First try to get from localStorage
+                    const storedStore = localStorage.getItem('currentStore');
+                    if (storedStore) {
+                        currentStore = JSON.parse(storedStore);
+                        updateStoreDisplay();
+                        return;
+                    }
+
+                    // If not in localStorage, fetch from server
+                    const seller = JSON.parse(localStorage.getItem('seller'));
+                    if (!seller || !seller.id) {
+                        console.error('No seller logged in');
+                        return;
+                    }
+
+                    const response = await fetch(`${API_BASE_URL}/api/stores?sellerId=${seller.id}`);
                     if (!response.ok) throw new Error('Failed to fetch store data');
-                    currentStore = await response.json();
-                    updateStoreDisplay();
+
+                    const stores = await response.json();
+                    if (stores.length > 0) {
+                        currentStore = stores[0];
+                        localStorage.setItem('currentStore', JSON.stringify(currentStore));
+                        updateStoreDisplay();
+                    }
                 } catch (error) {
                     console.error('Error loading store data:', error);
                     document.getElementById('store-name').textContent = 'Error loading store information';
@@ -348,10 +393,13 @@
                 const storeLogoElement = document.getElementById('store-logo');
 
                 storeNameElement.textContent = currentStore.storeName || 'My Store';
+
+                // Create proper store URL
+                const storeUrl = `${window.location.protocol}//${window.location.host}/store_customer.html?store=${currentStore._id || currentStore.id}`;
                 storeLinkElement.textContent = currentStore.storeName ?
                     `${currentStore.storeName.toLowerCase().replace(/\s+/g, '-')}.com` :
-                    'store-name.com';
-                storeLinkElement.href = 'customer.html';
+                    'my-store.com';
+                storeLinkElement.href = storeUrl;
 
                 if (currentStore.logoImage) {
                     storeLogoElement.src = currentStore.logoImage;
@@ -376,9 +424,18 @@
             fetchProducts();
 
             document.querySelectorAll(".sidebar nav ul li").forEach((navItem) => {
-                navItem.addEventListener("click", () => {
+                navItem.addEventListener("click", async () => {
                     const sectionId = navItem.getAttribute("data-section");
                     showSection(sectionId);
+
+                    // Load data when section is shown
+                    if (sectionId === 'orders') {
+                        await loadStoreData(); // Ensure currentStore is loaded
+                        await renderOrders();
+                    } else if (sectionId === 'analytics') {
+                        await loadStoreData(); // Ensure currentStore is loaded 
+                        await renderAnalytics();
+                    }
                 });
             });
 
@@ -387,7 +444,16 @@
 
             async function fetchProducts() {
                 try {
-                    const response = await fetch(`${API_BASE_URL}/api/products`);
+                    // Ensure currentStore is loaded
+                    if (!currentStore) {
+                        await loadStoreData();
+                        if (!currentStore) {
+                            console.error('No store available for this seller');
+                            return;
+                        }
+                    }
+
+                    const response = await fetch(`${API_BASE_URL}/api/products?storeId=${currentStore._id}`);
                     if (!response.ok) throw new Error('Failed to fetch products');
                     products = await response.json();
                     renderProducts();
@@ -399,63 +465,98 @@
 
             function renderProducts() {
                 productTableBody.innerHTML = '';
+
+                if (products.length === 0) {
+                    productTableBody.innerHTML = '<tr><td colspan="5">No products found for this store</td></tr>';
+                    return;
+                }
+
                 products.forEach(product => {
                     const row = document.createElement("tr");
                     row.setAttribute('data-id', product._id);
                     row.innerHTML = `
-                        <td>${product.name}</td>
-                        <td>₹${product.price}</td>
-                        <td>${product.stock}</td>
-                        <td>
-                            <button class="btn btn-small edit-btn">Edit</button>
-                            <button class="btn btn-small delete-btn">Delete</button>
-                        </td>
-                    `;
+            <td>
+                ${product.image ?
+                            `<img src="${API_BASE_URL}${product.image}" alt="${product.name}" style="width:50px;height:50px;object-fit:cover;">` :
+                            '<div style="width:50px;height:50px;background:#ddd;"></div>'
+                        }
+                ${product.name}
+            </td>
+            <td>${product.description}</td>
+            <td>₹${product.price}</td>
+            <td>${product.stock}</td>
+            <td>
+                <button class="btn btn-small edit-btn">Edit</button>
+                <button class="btn btn-small delete-btn">Delete</button>
+            </td>
+        `;
                     productTableBody.appendChild(row);
                 });
-
                 attachEventListeners();
             }
 
             addProductBtn.addEventListener("click", async () => {
                 const nameInput = document.getElementById("product-name");
+                const descriptionInput = document.getElementById("product-description");
                 const priceInput = document.getElementById("product-price");
                 const stockInput = document.getElementById("product-stock");
+                const imageInput = document.getElementById("product-image");
 
                 const productName = nameInput.value.trim();
+                const productDescription = descriptionInput.value.trim();
                 const productPrice = priceInput.value.trim();
                 const productStock = stockInput.value.trim();
+                const productImage = imageInput.files[0];
 
-                if (!productName || !productPrice || !productStock) {
+                if (!productName || !productPrice || !productStock || !productDescription) {
                     alert("Please fill in all product fields.");
                     return;
+                }
+
+                // Ensure we have a current store
+                if (!currentStore || !currentStore._id) {
+                    alert("No store selected. Please create or select a store first.");
+                    return;
+                }
+
+                const formData = new FormData();
+                formData.append('name', productName);
+                formData.append('description', productDescription);
+                formData.append('price', productPrice);
+                formData.append('stock', productStock);
+                formData.append('storeId', currentStore._id);
+
+                if (productImage) {
+                    formData.append('image', productImage);
                 }
 
                 try {
                     const response = await fetch(`${API_BASE_URL}/api/products`, {
                         method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({
-                            name: productName,
-                            price: productPrice,
-                            stock: productStock
-                        })
+                        body: formData
+                        // Don't set Content-Type header - let the browser set it with boundary
                     });
 
-                    if (!response.ok) throw new Error('Failed to add product');
+                    if (!response.ok) {
+                        const errorData = await response.json();
+                        throw new Error(errorData.error || 'Failed to add product');
+                    }
 
                     const newProduct = await response.json();
                     products.push(newProduct);
                     renderProducts();
 
+                    // Reset form
                     nameInput.value = "";
+                    descriptionInput.value = "";
                     priceInput.value = "";
                     stockInput.value = "";
+                    imageInput.value = "";
+
+                    alert("Product added successfully!");
                 } catch (error) {
                     console.error('Error adding product:', error);
-                    alert('Error adding product. Please try again.');
+                    alert(`Error adding product: ${error.message}`);
                 }
             });
 
@@ -482,6 +583,9 @@
                 const newName = prompt("Enter new product name:", product.name);
                 if (newName === null) return;
 
+                const newDescription = prompt("Enter new product description:", product.description);
+                if (newDescription === null) return;
+
                 const newPrice = prompt("Enter new price:", product.price);
                 if (newPrice === null) return;
 
@@ -490,6 +594,7 @@
 
                 updateProduct(productId, {
                     name: newName,
+                    description: newDescription,
                     price: newPrice,
                     stock: newStock
                 });
@@ -497,12 +602,19 @@
 
             async function updateProduct(productId, updates) {
                 try {
+                    const formData = new FormData();
+                    formData.append('name', updates.name);
+                    formData.append('description', updates.description);
+                    formData.append('price', updates.price);
+                    formData.append('stock', updates.stock);
+
+                    if (updates.image) {
+                        formData.append('image', updates.image);
+                    }
+
                     const response = await fetch(`${API_BASE_URL}/api/products/${productId}`, {
                         method: 'PUT',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify(updates)
+                        body: formData
                     });
 
                     if (!response.ok) throw new Error('Failed to update product');
@@ -514,6 +626,43 @@
                     console.error('Error updating product:', error);
                     alert('Error updating product. Please try again.');
                 }
+            }
+
+            function editProduct(productId) {
+                const product = products.find(p => p._id === productId);
+                if (!product) return;
+
+                const newName = prompt("Enter new product name:", product.name);
+                if (newName === null) return;
+
+                const newDescription = prompt("Enter new product description:", product.description);
+                if (newDescription === null) return;
+
+                const newPrice = prompt("Enter new price:", product.price);
+                if (newPrice === null) return;
+
+                const newStock = prompt("Enter new stock:", product.stock);
+                if (newStock === null) return;
+
+                // For image, we'll need to create a file input dialog
+                const input = document.createElement('input');
+                input.type = 'file';
+                input.accept = 'image/*';
+
+                input.onchange = e => {
+                    const file = e.target.files[0];
+                    if (file) {
+                        updateProduct(productId, {
+                            name: newName,
+                            description: newDescription,
+                            price: newPrice,
+                            stock: newStock,
+                            image: file
+                        });
+                    }
+                };
+
+                input.click();
             }
 
             function attachEventListeners() {
@@ -539,7 +688,7 @@
         });
 
         // Add edit store functionality
-        document.querySelector('.store-actions .edit-btn').addEventListener('click', () => {
+        document.querySelector('.store-actions .edit-btn')?.addEventListener('click', () => {
             if (!currentStore) return;
 
             const newName = prompt("Enter new store name:", currentStore.storeName);
@@ -555,7 +704,7 @@
 
         async function updateStoreInfo(updates) {
             try {
-                const response = await fetch(`${API_BASE_URL}/api/stores/${currentStore.id}`, {
+                const response = await fetch(`${API_BASE_URL}/api/stores/${currentStore._id}`, {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json',
@@ -575,7 +724,7 @@
             }
         }
 
-        document.querySelector('.store-actions .delete-btn').addEventListener('click', () => {
+        document.querySelector('.store-actions .delete-btn')?.addEventListener('click', () => {
             if (!currentStore) return;
 
             if (confirm("Are you sure you want to delete this store? This action cannot be undone.")) {
@@ -585,7 +734,7 @@
 
         async function deleteStore() {
             try {
-                const response = await fetch(`${API_BASE_URL}/api/stores/${currentStore.id}`, {
+                const response = await fetch(`${API_BASE_URL}/api/stores/${currentStore._id}`, {
                     method: 'DELETE'
                 });
 
@@ -595,10 +744,189 @@
                 currentStore = null;
                 updateStoreDisplay();
                 alert('Store deleted successfully');
+                window.location.href = 'index.html';
             } catch (error) {
                 console.error('Error deleting store:', error);
                 alert('Error deleting store. Please try again.');
             }
+        }
+
+        // Order-related functions
+        async function fetchOrders() {
+            try {
+                // Ensure currentStore is loaded
+                if (!currentStore) {
+                    await loadStoreData();
+                    if (!currentStore) {
+                        console.error('No store available for this seller');
+                        return [];
+                    }
+                }
+
+                const response = await fetch(`${API_BASE_URL}/api/orders?storeId=${currentStore._id}`);
+                if (!response.ok) throw new Error('Failed to fetch orders');
+
+                return await response.json();
+            } catch (error) {
+                console.error('Error fetching orders:', error);
+                return [];
+            }
+        }
+
+        async function renderOrders() {
+            try {
+                const ordersBody = document.getElementById('orders-body');
+                ordersBody.innerHTML = '<tr><td colspan="7">Loading orders...</td></tr>';
+
+                orders = await fetchOrders();
+
+                if (!orders || orders.length === 0) {
+                    ordersBody.innerHTML = '<tr><td colspan="7">No orders found for this store</td></tr>';
+                    return;
+                }
+
+                ordersBody.innerHTML = orders.map(order => `
+                    <tr data-id="${order._id}">
+                        <td>${order._id.substring(0, 8)}...</td>
+                        <td>${order.productName}</td>
+                        <td>
+                            ${order.customerName}<br>
+                            ${order.customerEmail}
+                        </td>
+                        <td>₹${(order.price * order.quantity).toFixed(2)}</td>
+                        <td>
+                            <select class="status-select" data-id="${order._id}">
+                                <option value="Pending" ${order.status === 'Pending' ? 'selected' : ''}>Pending</option>
+                                <option value="Processing" ${order.status === 'Processing' ? 'selected' : ''}>Processing</option>
+                                <option value="Shipped" ${order.status === 'Shipped' ? 'selected' : ''}>Shipped</option>
+                                <option value="Delivered" ${order.status === 'Delivered' ? 'selected' : ''}>Delivered</option>
+                                <option value="Cancelled" ${order.status === 'Cancelled' ? 'selected' : ''}>Cancelled</option>
+                            </select>
+                        </td>
+                        <td>${new Date(order.orderDate).toLocaleDateString()}</td>
+                        <td>
+                            <button class="btn btn-small view-btn">View</button>
+                            <button class="btn btn-small delete-btn">Delete</button>
+                        </td>
+                    </tr>
+                `).join('');
+
+                // Add event listeners for status changes
+                document.querySelectorAll('.status-select').forEach(select => {
+                    select.addEventListener('change', async (e) => {
+                        const orderId = e.target.getAttribute('data-id');
+                        const newStatus = e.target.value;
+                        await updateOrderStatus(orderId, newStatus);
+                    });
+                });
+
+                // Add event listeners for delete buttons
+                document.querySelectorAll('#orders-body .delete-btn').forEach(btn => {
+                    btn.addEventListener('click', async (e) => {
+                        const orderId = e.target.closest('tr').getAttribute('data-id');
+                        if (confirm('Are you sure you want to delete this order?')) {
+                            await deleteOrder(orderId);
+                            await renderOrders();
+                        }
+                    });
+                });
+
+            } catch (error) {
+                console.error('Error rendering orders:', error);
+                ordersBody.innerHTML = '<tr><td colspan="7">Error loading orders. Please try again.</td></tr>';
+            }
+        }
+
+        async function updateOrderStatus(orderId, newStatus) {
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/orders/${orderId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ status: newStatus })
+                });
+
+                if (!response.ok) throw new Error('Failed to update order status');
+
+                // Update local orders array
+                const orderIndex = orders.findIndex(o => o._id === orderId);
+                if (orderIndex !== -1) {
+                    orders[orderIndex].status = newStatus;
+                }
+            } catch (error) {
+                console.error('Error updating order status:', error);
+                alert('Error updating order status. Please try again.');
+            }
+        }
+
+        async function deleteOrder(orderId) {
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/orders/${orderId}`, {
+                    method: 'DELETE'
+                });
+
+                if (!response.ok) throw new Error('Failed to delete order');
+            } catch (error) {
+                console.error('Error deleting order:', error);
+                throw error; // Re-throw to be handled by caller
+            }
+        }
+
+
+
+        // Call renderOrders() when the orders section is shown
+        document.querySelector('[data-section="orders"]').addEventListener('click', renderOrders);
+
+        async function renderAnalytics() {
+            try {
+                // Get sales data
+                const salesResponse = await fetch(`${API_BASE_URL}/api/orders/analytics?storeId=${currentStore._id}`);
+                if (!salesResponse.ok) throw new Error('Failed to fetch sales data');
+                const salesData = await salesResponse.json();
+
+                // Get popular products
+                const productsResponse = await fetch(`${API_BASE_URL}/api/products/analytics?storeId=${currentStore._id}`);
+                if (!productsResponse.ok) throw new Error('Failed to fetch product analytics');
+                const productsData = await productsResponse.json();
+
+                // Render charts (using Chart.js or similar)
+                renderSalesChart(salesData);
+                renderProductsChart(productsData);
+            } catch (error) {
+                console.error('Error loading analytics:', error);
+                document.querySelector('.analytics-content').innerHTML = `
+            <div class="error-message">
+                Error loading analytics data: ${error.message}
+            </div>
+        `;
+            }
+        }
+
+        function renderSalesChart(data) {
+            // Implement chart rendering logic
+            const ctx = document.getElementById('sales-chart').getContext('2d');
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: data.labels,
+                    datasets: [{
+                        label: 'Sales',
+                        data: data.values,
+                        backgroundColor: 'rgba(139, 92, 246, 0.2)',
+                        borderColor: 'rgba(139, 92, 246, 1)',
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
         }
     </script>
 </body>

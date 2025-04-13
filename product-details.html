@@ -1,25 +1,26 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Product</title>
     <style>
-        body{
+        body {
             font-family: 'Inter', sans-serif;
             background-image: linear-gradient(to bottom right, #1f2937, #5b21b6, #000000);
             color: white;
             height: 100vh;
             margin: 0;
-            padding: 0;        
+            padding: 0;
         }
 
-        h1{
+        h1 {
             position: absolute;
             padding-left: 70px;
         }
 
-        h2{
+        h2 {
             text-align: center;
             padding-top: 20px;
             font-size: 40px;
@@ -38,6 +39,7 @@
             border-radius: 20px;
             margin-left: 10px;
             font-weight: bold;
+            text-decoration: none;
         }
 
         .photo {
@@ -51,11 +53,11 @@
             padding: 80px 40px;
             text-align: center;
         }
+
         .photo img {
             max-width: 100%;
             height: auto;
             border-radius: 10px;
-            
         }
 
         .details {
@@ -66,43 +68,181 @@
             padding: 20px 40px;
         }
 
-        .button a{
-            background-color: rgb(79, 136, 223);
-            color: white;
+        .button {
             margin-top: 20px;
-            padding: 9px 15px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
         }
 
+        #add-to-cart-btn {
+            display: inline-block;
+            background: linear-gradient(to right, #3b82f6, #8b5cf6);
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            text-decoration: none;
+        }
+
+        #add-to-cart-btn:hover {
+            opacity: 0.9;
+        }
+
+        .loading-message {
+            text-align: center;
+            padding: 40px;
+            font-size: 1.1rem;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .cart-link {
+            position: relative;
+        }
+
+        #cart-count {
+            background: #ef4444;
+            color: white;
+            border-radius: 50%;
+            padding: 2px 6px;
+            font-size: 12px;
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            display: none;
+        }
     </style>
 </head>
+
 <body>
     <header>
-        <h1>My Store</h1>
-        <h2>Welcome to Store</h2>
+        <h1 id="store-title">My Store</h1>
+        <h2 id="product-welcome">Product Details</h2>
         <div>
             <div class="header-buttons">
-                <a href="store.html">Home</a>
-                <a href="store.html">Stores</a>
-                <a href="cart.html">Cart</a>
-                <a href="checkout.html">Checkout</a>
+                <a href="#" id="back-to-store">Back to Store</a>
+                <a href="customer.html">Home</a>
+                <a href="cart.html" class="cart-link">
+                    Cart <span id="cart-count"></span>
+                </a>
             </div>
         </div>
     </header>
 
-    <div class="photo">
-        <img src="images/watch.png" alt="Product Image" >
+    <div class="photo" id="product-image-container">
+        <div class="loading-message">Loading product...</div>
     </div>
-    <div class="details">
-        <h3>Product Name</h3>
-        <p>Description of the product goes here. It can be a brief overview of the product features and specifications.</p>
-        <p>Price: $XX.XX</p><br><br>
+    <div class="details" id="product-details">
+        <h3 id="product-name">Product Name</h3>
+        <p id="product-description">Loading product details...</p>
+        <p id="product-price">Price: -</p>
+        <p id="product-stock">Availability: -</p><br><br>
         <div class="button">
-            <a>Add to Cart</a>
-            <a href="checkout.html">Buy Now</a>
+            <button id="add-to-cart-btn">Add to Cart</button>
         </div>
     </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", async () => {
+            const API_BASE_URL = 'http://localhost:3000';
+            const urlParams = new URLSearchParams(window.location.search);
+            const productId = urlParams.get('product');
+            let product; // Declare product variable at the top
+
+            if (!productId) {
+                alert('No product specified');
+                window.location.href = 'store.html';
+                return;
+            }
+
+            // Function to update cart count in header
+            function updateCartCount() {
+                const cart = JSON.parse(localStorage.getItem('cart')) || [];
+                const totalItems = cart.reduce((total, item) => total + item.quantity, 0);
+                const cartCountElement = document.getElementById('cart-count');
+
+                if (totalItems > 0) {
+                    cartCountElement.textContent = totalItems;
+                    cartCountElement.style.display = 'inline-block';
+                } else {
+                    cartCountElement.style.display = 'none';
+                }
+            }
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/products/${productId}`);
+                if (!response.ok) throw new Error('Failed to fetch product');
+
+                product = await response.json(); // Assign to the product variable
+
+                document.getElementById('product-name').textContent = product.name;
+                document.getElementById('product-description').textContent = product.description;
+                document.getElementById('product-price').textContent = `Price: ₹${product.price.toFixed(2)}`;
+                document.getElementById('product-stock').textContent = `Availability: ${product.stock > 0 ? 'In Stock' : 'Out of Stock'}`;
+
+                const imageContainer = document.getElementById('product-image-container');
+                if (product.image) {
+                    imageContainer.innerHTML = `<img src="${product.image}" alt="${product.name}" style="max-width: 100%; height: auto;">`;
+                } else {
+                    imageContainer.innerHTML = `<div style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; background: linear-gradient(to right, #8b5cf6, #3b82f6); color: white; font-size: 3rem; font-weight: bold; border-radius: 8px;">${product.name.charAt(0).toUpperCase()}</div>`;
+                }
+
+                // Add to cart functionality
+                document.getElementById('add-to-cart-btn').addEventListener('click', () => {
+                    const cart = JSON.parse(localStorage.getItem('cart')) || [];
+                    const existingItem = cart.find(item => item.id === product._id);
+
+                    if (existingItem) {
+                        existingItem.quantity += 1;
+                    } else {
+                        cart.push({
+                            id: product._id,
+                            name: product.name,
+                            price: product.price,
+                            image: product.image,
+                            quantity: 1
+                        });
+                    }
+
+                    localStorage.setItem('cart', JSON.stringify(cart));
+                    alert(`${product.name} added to cart!`);
+                    updateCartCount();
+                });
+
+                // Initialize cart count
+                updateCartCount();
+
+            } catch (error) {
+                console.error('Error loading product:', error);
+                document.getElementById('product-details').innerHTML = `
+                    <h3>Error loading product</h3>
+                    <p>${error.message}</p>
+                    <a href="store.html">Back to Store</a>
+                `;
+            }
+
+            // Add back button functionality
+            document.getElementById('back-to-store').addEventListener('click', () => {
+                const urlParams = new URLSearchParams(window.location.search);
+                const storeId = urlParams.get('store');
+                if (storeId) {
+                    window.location.href = `store_customer.html?store=${storeId}`;
+                } else {
+                    window.location.href = 'customer.html';
+                }
+            });
+
+            // Update all product links to include store ID
+            document.querySelectorAll('a[href^="product-details.html"]').forEach(link => {
+                const urlParams = new URLSearchParams(window.location.search);
+                const storeId = urlParams.get('store');
+                if (storeId) {
+                    const href = new URL(link.href);
+                    href.searchParams.set('store', storeId);
+                    link.href = href.toString();
+                }
+            });
+        });
+    </script>
 </body>
+
 </html>

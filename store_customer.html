@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -39,7 +40,7 @@
             position: absolute;
             margin-top: 25px;
             right: 50px;
-            
+
         }
 
         .header-buttons a {
@@ -67,46 +68,196 @@
             padding: 40px 10px;
             text-align: center;
         }
-        .store-card a{
+
+        .store-card a {
             text-decoration: none;
             color: white;
             font-weight: bold;
             font-size: 18px;
+        }
+
+        .product-name {
+            font-weight: 600;
+            font-size: 1.2rem;
+            margin-bottom: 10px;
+        }
+
+        .product-price {
+            font-size: 1.1rem;
+            color: #8b5cf6;
+            margin-bottom: 15px;
+        }
+
+        .product-stock {
+            font-size: 0.9rem;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .add-to-cart {
+            display: inline-block;
+            padding: 8px 16px;
+            background: linear-gradient(to right, #8b5cf6, #3b82f6);
+            color: white;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            margin-top: 10px;
+            text-decoration: none;
+        }
+
+        .product-image-container {
+            width: 100%;
+            height: 200px;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .product-image {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+            border-radius: 8px;
+        }
+
+        .product-image-placeholder {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(to right, #8b5cf6, #3b82f6);
+            color: white;
+            font-size: 3rem;
+            font-weight: bold;
+            border-radius: 8px;
+        }
+
+        .loading-message,
+        .empty-message {
+            grid-column: 1 / -1;
+            text-align: center;
+            padding: 40px;
+            font-size: 1.1rem;
+            color: rgba(255, 255, 255, 0.7);
         }
     </style>
 </head>
 
 <body>
     <header>
-        <h1>My Store</h1>
-        <div>
+        <div class="header-content">
+            <h1 id="store-title">My Store</h1>
             <div class="header-buttons">
                 <a href="customer.html">Home</a>
-                <a href="customer.html">Stores</a>
                 <a href="cart.html">Cart</a>
-                <a href="checkout.html">Checkout</a>
             </div>
         </div>
-        <h2>Welcome to Store</h2>
+        <h2 id="store-welcome">Welcome to Our Store</h2>
     </header>
 
-    <div class="store-grid">
-        <div class="store-card">
-            <a href="product-details.html">Product-1</a>
-        </div>
-        <div class="store-card">
-            <a href="product-details.html">Product-2</a>
-        </div>
-        <div class="store-card">
-            <a href="product-details.html">Product-3</a>
-        </div>
-        <div class="store-card">
-            <a href="product-details.html">Product-4</a>
-        </div>
-        <div class="store-card">
-            <a href="product-details.html">Product-5</a>
-        </div>
+    <div class="store-grid" id="product-grid">
+        <!-- Products will be loaded here dynamically -->
+        <div class="loading-message">Loading products...</div>
     </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", async () => {
+            const API_BASE_URL = 'http://localhost:3000';
+            const productGrid = document.getElementById('product-grid');
+            const storeTitle = document.getElementById('store-title');
+            const storeWelcome = document.getElementById('store-welcome');
+
+            // Get store ID from URL query parameter
+            const urlParams = new URLSearchParams(window.location.search);
+            const storeId = urlParams.get('store');
+
+            // Fetch store details if store ID is provided
+            if (storeId) {
+                try {
+                    const response = await fetch(`${API_BASE_URL}/api/stores/${storeId}`);
+                    if (response.ok) {
+                        const store = await response.json();
+                        storeTitle.textContent = store.storeName;
+                        storeWelcome.textContent = `Welcome to ${store.storeName}`;
+
+                        // Now fetch products for this specific store
+                        fetchProducts(storeId);
+                    }
+                } catch (error) {
+                    console.error('Error fetching store details:', error);
+                }
+            } else {
+                // If no store ID, show all products (or handle differently)
+                fetchProducts();
+            }
+
+            // Fetch and display products for a specific store
+            async function fetchProducts(storeId) {
+                try {
+                    productGrid.innerHTML = '<div class="loading-message">Loading products...</div>';
+
+                    // Always require storeId now
+                    if (!storeId) {
+                        productGrid.innerHTML = '<div class="empty-message">Store not found</div>';
+                        return;
+                    }
+
+                    const response = await fetch(`${API_BASE_URL}/api/products?storeId=${storeId}`);
+                    if (!response.ok) throw new Error('Failed to fetch products');
+
+                    const products = await response.json();
+
+                    if (products.length === 0) {
+                        productGrid.innerHTML = '<div class="empty-message">No products available in this store yet.</div>';
+                        return;
+                    }
+
+                    renderProducts(products);
+                } catch (error) {
+                    console.error('Error fetching products:', error);
+                    productGrid.innerHTML = `
+            <div class="empty-message">
+                Error loading products. Please try again later.
+                <br><small>${error.message}</small>
+            </div>
+        `;
+                }
+            }
+
+            // Render products to the grid with images
+            function renderProducts(products) {
+                productGrid.innerHTML = '';
+
+                products.forEach(product => {
+                    const productCard = document.createElement('div');
+                    productCard.className = 'store-card';
+
+                    productCard.innerHTML = `
+                        <div class="product-image-container">
+                            ${product.image ?
+                            `<img src="${product.image}" alt="${product.name}" class="product-image">` :
+                            `<div class="product-image-placeholder">${product.name.charAt(0).toUpperCase()}</div>`
+                        }
+                        </div>
+                        <div class="product-name">${product.name}</div>
+                        <div class="product-price">₹${product.price.toFixed(2)}</div>
+                        <div class="product-stock">${product.stock} in stock</div>
+                        <a href="product-details.html?product=${product._id}" class="add-to-cart">Buy Now</a>
+                    `;
+
+                    productGrid.appendChild(productCard);
+                });
+            }
+
+            // Initialize
+            fetchProducts();
+        });
+    </script>
 </body>
 
 </html>

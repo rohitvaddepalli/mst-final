@@ -221,7 +221,7 @@
                     if (response.ok) {
                         alert('Registration successful!');
                         localStorage.setItem('user', JSON.stringify(data.user));
-                        window.location.href = 'customer.html';
+                        window.location.href = 'login_customer.html';
                     } else {
                         alert('Error: ' + (data.error || 'Registration failed'));
                     }

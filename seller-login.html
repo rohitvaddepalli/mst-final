@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -69,7 +70,10 @@
             gap: 1.5rem;
         }
 
-        .tab-content.active { display: flex; }
+        .tab-content.active {
+            display: flex;
+        }
+
         form {
             display: flex;
             flex-direction: column;
@@ -78,8 +82,18 @@
             border-radius: 0.75rem;
             background: rgba(255, 255, 255, 0.05);
         }
-        .form-group { text-align: left; }
-        label { display: flex; align-items: center; gap: 0.5rem; color: #e5e7eb; }
+
+        .form-group {
+            text-align: left;
+        }
+
+        label {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: #e5e7eb;
+        }
+
         input {
             width: 94%;
             padding: 10px;
@@ -88,7 +102,7 @@
             background: rgba(0, 0, 0, 0.2);
             color: white;
         }
-        
+
         .submit-button {
             padding: 0.75rem;
             border-radius: 0.75rem;
@@ -97,32 +111,116 @@
             border: none;
             font-size: 1rem;
         }
-        .login-button { background: linear-gradient(to right, #3b82f6, #8b5cf6); color: white; }
-        .text-center a { color: #93c5fd; text-decoration: none; transition: color 0.2s; }
+
+        .login-button {
+            background: linear-gradient(to right, #3b82f6, #8b5cf6);
+            color: white;
+        }
+
+        .text-center a {
+            color: #93c5fd;
+            text-decoration: none;
+            transition: color 0.2s;
+        }
     </style>
 </head>
+
 <body>
     <div class="container">
         <h2>My Store</h2>
-        <p>Welcome! Log in.</p>
+        <p>Welcome! Log in to your seller account.</p>
         <div class="tabs-list">
             <button class="tab-button active" data-target="login">Login</button>
         </div>
         <div id="login" class="tab-content active">
-            <form>
+            <form id="loginForm">
                 <div class="form-group">
                     <label>Email</label>
-                    <input type="email" placeholder="Enter your email" required>
+                    <input type="email" id="email" name="email" placeholder="Enter your email" required>
                 </div>
                 <div class="form-group">
                     <label>Password</label>
-                    <input type="password" placeholder="Enter your password" required>
+                    <input type="password" id="password" name="password" placeholder="Enter your password" required>
                 </div>
-                <button type="submit" class="submit-button login-button"><a href="adminseller.html">Log in</a></button>
-                <div class="text-center"><a href="#">Forgot your password?</a></div>
+                <button type="submit" class="submit-button login-button" id="loginButton">
+                    <span id="buttonText">Log in</span>
+                    <span id="loadingSpinner" class="loading" style="display: none;"></span>
+                </button>
+                <div class="text-center">
+                    <a href="seller-register.html">Don't have an account? Register</a>
+                </div>
             </form>
         </div>
     </div>
+
+    <script>
+        document.getElementById('loginForm').addEventListener('submit', async function (e) {
+            e.preventDefault();
+
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const loginButton = document.getElementById('loginButton');
+            const buttonText = document.getElementById('buttonText');
+            const loadingSpinner = document.getElementById('loadingSpinner');
+
+            // Show loading state
+            loginButton.disabled = true;
+            buttonText.textContent = 'Logging in...';
+            loadingSpinner.style.display = 'inline-block';
+
+            try {
+                // 1. First authenticate the seller
+                const loginResponse = await fetch('http://localhost:3000/api/seller/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ email, password })
+                });
+
+                if (!loginResponse.ok) {
+                    const errorData = await loginResponse.json();
+                    throw new Error(errorData.error || 'Login failed');
+                }
+
+                const loginData = await loginResponse.json();
+
+                // Store seller info in localStorage
+                localStorage.setItem('seller', JSON.stringify({
+                    id: loginData.seller.id,
+                    email: loginData.seller.email
+                }));
+
+                // 2. Check if seller has a store
+                const storeResponse = await fetch(`http://localhost:3000/api/stores?sellerId=${loginData.seller.id}`);
+
+                if (!storeResponse.ok) {
+                    throw new Error('Failed to check store status');
+                }
+
+                const storeData = await storeResponse.json();
+
+                // 3. Redirect based on whether seller has a store
+                if (storeData.length > 0) {
+                    // Seller has at least one store - redirect to admin panel
+                    localStorage.setItem('currentStore', JSON.stringify(storeData[0]));
+                    window.location.href = 'adminseller.html';
+                } else {
+                    // Seller has no stores - redirect to create store form
+                    window.location.href = 'create-store-form.html';
+                }
+
+            } catch (error) {
+                console.error('Error:', error);
+                alert(error.message || 'An error occurred during login');
+
+                // Reset button state
+                loginButton.disabled = false;
+                buttonText.textContent = 'Log in';
+                loadingSpinner.style.display = 'none';
+            }
+        });
     </script>
 </body>
+
 </html>
