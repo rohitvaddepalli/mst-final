@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Store</title>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-image: linear-gradient(to bottom right, #1f2937, #5b21b6, #000000);
+            color: white;
+            height: 100vh;
+            margin: 0;
+            padding: 0;
+        }
+
+        header {
+            color: #ffffff;
+            background: rgba(255, 255, 255, 0.05);
+            position: absolute;
+            padding: 20px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            position: relative;
+        }
+
+        h1 {
+            position: absolute;
+            margin: 10px;
+            display: inline-block;
+        }
+
+        h2 {
+            text-align: center;
+            font-size: 30px;
+            margin-top: 15px;
+        }
+
+        .header-buttons {
+            position: absolute;
+            margin-top: 25px;
+            right: 50px;
+            
+        }
+
+        .header-buttons a {
+            padding: 10px 15px;
+            margin-left: 10px;
+            font-weight: bold;
+            text-decoration: none;
+            color: white;
+        }
+
+        .store-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 20px;
+            padding: 20px;
+            max-width: 1200px;
+            margin: 20px auto;
+        }
+
+        .store-card {
+            color: white;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            padding: 40px 10px;
+            text-align: center;
+        }
+        .store-card a{
+            text-decoration: none;
+            color: white;
+            font-weight: bold;
+            font-size: 18px;
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <h1>My Store</h1>
+        <div>
+            <div class="header-buttons">
+                <a href="customer.html">Home</a>
+                <a href="customer.html">Stores</a>
+                <a href="cart.html">Cart</a>
+                <a href="checkout.html">Checkout</a>
+            </div>
+        </div>
+        <h2>Welcome to Store</h2>
+    </header>
+
+    <div class="store-grid">
+        <div class="store-card">
+            <a href="product-details.html">Product-1</a>
+        </div>
+        <div class="store-card">
+            <a href="product-details.html">Product-2</a>
+        </div>
+        <div class="store-card">
+            <a href="product-details.html">Product-3</a>
+        </div>
+        <div class="store-card">
+            <a href="product-details.html">Product-4</a>
+        </div>
+        <div class="store-card">
+            <a href="product-details.html">Product-5</a>
+        </div>
+    </div>
+</body>
+
+</html>

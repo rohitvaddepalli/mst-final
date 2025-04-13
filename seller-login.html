@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register / Login</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(to bottom right, #1f2937, #5b21b6, #000);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 96.5vh;
+            margin: 0;
+            padding: 1rem;
+        }
+
+        .container {
+            max-width: 448px;
+            width: 100%;
+            text-align: center;
+        }
+
+        h2 {
+            font-size: 2.25rem;
+            font-weight: 700;
+            background: linear-gradient(to right, #60a5fa, #8b5cf6);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .tabs-list {
+            display: flex;
+            justify-content: space-between;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 1rem;
+            padding: 0.25rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .tab-button {
+            flex: 1;
+            padding: 0.75rem;
+            border-radius: 0.75rem;
+            font-weight: 600;
+            border: none;
+            background: transparent;
+            color: white;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .tab-button.active {
+            background: rgba(99, 102, 241, 0.2);
+            border: 1px solid rgba(99, 102, 241, 0.3);
+        }
+
+        .tab-content {
+            display: none;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .tab-content.active { display: flex; }
+        form {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            padding: 2rem;
+            border-radius: 0.75rem;
+            background: rgba(255, 255, 255, 0.05);
+        }
+        .form-group { text-align: left; }
+        label { display: flex; align-items: center; gap: 0.5rem; color: #e5e7eb; }
+        input {
+            width: 94%;
+            padding: 10px;
+            border-radius: 0.375rem;
+            border: 1px solid #374151;
+            background: rgba(0, 0, 0, 0.2);
+            color: white;
+        }
+        
+        .submit-button {
+            padding: 0.75rem;
+            border-radius: 0.75rem;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            font-size: 1rem;
+        }
+        .login-button { background: linear-gradient(to right, #3b82f6, #8b5cf6); color: white; }
+        .text-center a { color: #93c5fd; text-decoration: none; transition: color 0.2s; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>My Store</h2>
+        <p>Welcome! Log in.</p>
+        <div class="tabs-list">
+            <button class="tab-button active" data-target="login">Login</button>
+        </div>
+        <div id="login" class="tab-content active">
+            <form>
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" placeholder="Enter your email" required>
+                </div>
+                <div class="form-group">
+                    <label>Password</label>
+                    <input type="password" placeholder="Enter your password" required>
+                </div>
+                <button type="submit" class="submit-button login-button"><a href="adminseller.html">Log in</a></button>
+                <div class="text-center"><a href="#">Forgot your password?</a></div>
+            </form>
+        </div>
+    </div>
+    </script>
+</body>
+</html>

@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Main Page - My Store</title>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-image: linear-gradient(to bottom right, #1f2937, #5b21b6, #000000);
+            color: white;
+            margin: 0;
+            padding: 0;
+        }
+
+        header {
+            color: white;
+            padding: 25px;
+            text-align: center;
+            position: relative;
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        header h1 {
+            margin: 0;
+            font-size: 2.5em;
+        }
+
+        header p {
+            margin: 5px 0;
+            font-size: 1em;
+        }
+        
+        .header-actions {
+            position: absolute;
+            top: 50px;
+            right: 320px;
+            display: flex;
+            gap: 20px;
+        }
+
+        .header-actions a {
+            color: white;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+        }
+
+        .header-buttons {
+            position: absolute;
+            top: 50px;
+            right: 150px;
+        }
+
+        .header-buttons a {
+            background: white;
+            text-decoration: none;
+            padding: 10px 15px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            margin-left: 10px;
+            font-weight: bold;
+        }
+
+
+        .hero {
+            height: 200px;
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+        }
+
+        .hero h1 {
+            font-size: 3em;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 20px;
+            border-radius: 8px;
+        }
+
+        .add-store-section {
+            padding: 2rem;
+            border-radius: 0.75rem;
+            margin: 1.5rem;
+            text-align: center;
+        }
+
+        .add-store-section h2 {
+            margin-bottom: 1rem;
+        }
+
+        .add-store-section a {
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.75rem;
+            font-weight: 600;
+            background: linear-gradient(to right, #3b82f6, #8b5cf6);
+            color: white;
+            cursor: pointer;
+            transition: 0.2s;
+            text-decoration: none;
+        }
+
+        .add-store-section a:hover {
+            opacity: 0.9;
+        }
+
+        .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            padding: 40px;
+        }
+
+        .feature-card {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+
+        .feature-card img {
+            width: 100px;
+            margin-bottom: 10px;
+        }
+
+        footer {
+            background: #29354127;
+            color: white;
+            text-align: center;
+            padding: 20px;
+            margin-top: 40px;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Welcome to My Store</h1>
+        <p>Your one-stop solution for managing your online business</p>
+        <div class="header-buttons">
+            <!-- <a href="login.html">Log in</a> -->
+            <a href="selection.html">Get started</a>
+        </div>
+        <div class="header-actions">
+            <a href="customercare.html">Customer Care</a>
+            <a href="aboutus.html">About Us</a>
+        </div>
+    </header>
+
+    <div class="hero">
+        <h1>Build, Manage, and Scale Your Business</h1>
+    </div>
+
+    <section class="add-store-section">
+        <h2>List Your Business and Reach More Customers</h2>
+        <p>Join our growing community and expand your online presence today!</p><br>
+        <a href="create-store-form.html">Add Your Store Now</a>
+    </section>
+
+    <section class="features">
+        <div class="feature-card">
+            <img src="images/store.png" alt="Setup">
+            <h3>Easy Store Setup</h3>
+            <p>Create your store in minutes and customize it to fit your brand.</p>
+        </div>
+        <div class="feature-card">
+            <img src="images/products.png" alt="Products">
+            <h3>Manage Products</h3>
+            <p>Add, edit, and organize your product catalog effortlessly.</p>
+        </div>
+        <div class="feature-card">
+            <img src="images/order.png" alt="Orders">
+            <h3>Track Orders</h3>
+            <p>Stay on top of customer orders and fulfillment.</p>
+        </div>
+        <div class="feature-card">
+            <img src="images/analysis.png" alt="Analytics">
+            <h3>Business Analytics</h3>
+            <p>Gain insights into your sales and customer behavior.</p>
+        </div>
+    </section>
+
+    <footer>
+        <p>&copy; 2025 My Store. All rights reserved.</p>
+    </footer>
+    <script>
+    </script>
+</body>
+</html>

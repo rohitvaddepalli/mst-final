@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Product</title>
+    <style>
+        body{
+            font-family: 'Inter', sans-serif;
+            background-image: linear-gradient(to bottom right, #1f2937, #5b21b6, #000000);
+            color: white;
+            height: 100vh;
+            margin: 0;
+            padding: 0;        
+        }
+
+        h1{
+            position: absolute;
+            padding-left: 70px;
+        }
+
+        h2{
+            text-align: center;
+            padding-top: 20px;
+            font-size: 40px;
+        }
+
+        .header-buttons {
+            position: absolute;
+            top: 60px;
+            right: 130px;
+            word-spacing: 20px;
+        }
+
+        .header-buttons a {
+            color: white;
+            padding: 10px 15px;
+            border-radius: 20px;
+            margin-left: 10px;
+            font-weight: bold;
+        }
+
+        .photo {
+            position: absolute;
+            height: 340px;
+            width: 300px;
+            margin: 100px 200px;
+            background: #fff;
+            border-radius: 10px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            padding: 80px 40px;
+            text-align: center;
+        }
+        .photo img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 10px;
+            
+        }
+
+        .details {
+            position: absolute;
+            margin: 150px 850px;
+            height: 300px;
+            width: 400px;
+            padding: 20px 40px;
+        }
+
+        .button a{
+            background-color: rgb(79, 136, 223);
+            color: white;
+            margin-top: 20px;
+            padding: 9px 15px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+    </style>
+</head>
+<body>
+    <header>
+        <h1>My Store</h1>
+        <h2>Welcome to Store</h2>
+        <div>
+            <div class="header-buttons">
+                <a href="store.html">Home</a>
+                <a href="store.html">Stores</a>
+                <a href="cart.html">Cart</a>
+                <a href="checkout.html">Checkout</a>
+            </div>
+        </div>
+    </header>
+
+    <div class="photo">
+        <img src="images/watch.png" alt="Product Image" >
+    </div>
+    <div class="details">
+        <h3>Product Name</h3>
+        <p>Description of the product goes here. It can be a brief overview of the product features and specifications.</p>
+        <p>Price: $XX.XX</p><br><br>
+        <div class="button">
+            <a>Add to Cart</a>
+            <a href="checkout.html">Buy Now</a>
+        </div>
+    </div>
+</body>
+</html>
