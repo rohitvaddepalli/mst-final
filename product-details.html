@@ -148,6 +148,14 @@
             const productId = urlParams.get('product');
             let product; // Declare product variable at the top
 
+            // Get user from localStorage
+            const user = JSON.parse(localStorage.getItem('user'));
+            if (!user) {
+                alert('Please login to add items to cart');
+                window.location.href = 'login_customer.html';
+                return;
+            }
+
             if (!productId) {
                 alert('No product specified');
                 window.location.href = 'store.html';
@@ -155,16 +163,23 @@
             }
 
             // Function to update cart count in header
-            function updateCartCount() {
-                const cart = JSON.parse(localStorage.getItem('cart')) || [];
-                const totalItems = cart.reduce((total, item) => total + item.quantity, 0);
-                const cartCountElement = document.getElementById('cart-count');
+            async function updateCartCount() {
+                try {
+                    const response = await fetch(`${API_BASE_URL}/api/cart?userId=${encodeURIComponent(user._id || user.email)}`);
+                    if (response.ok) {
+                        const cart = await response.json();
+                        const totalItems = cart.items.reduce((total, item) => total + item.quantity, 0);
+                        const cartCountElement = document.getElementById('cart-count');
 
-                if (totalItems > 0) {
-                    cartCountElement.textContent = totalItems;
-                    cartCountElement.style.display = 'inline-block';
-                } else {
-                    cartCountElement.style.display = 'none';
+                        if (totalItems > 0) {
+                            cartCountElement.textContent = totalItems;
+                            cartCountElement.style.display = 'inline-block';
+                        } else {
+                            cartCountElement.style.display = 'none';
+                        }
+                    }
+                } catch (error) {
+                    console.error('Error updating cart count:', error);
                 }
             }
 
@@ -172,7 +187,7 @@
                 const response = await fetch(`${API_BASE_URL}/api/products/${productId}`);
                 if (!response.ok) throw new Error('Failed to fetch product');
 
-                product = await response.json(); // Assign to the product variable
+                product = await response.json();
 
                 document.getElementById('product-name').textContent = product.name;
                 document.getElementById('product-description').textContent = product.description;
@@ -187,29 +202,40 @@
                 }
 
                 // Add to cart functionality
-                document.getElementById('add-to-cart-btn').addEventListener('click', () => {
-                    const cart = JSON.parse(localStorage.getItem('cart')) || [];
-                    const existingItem = cart.find(item => item.id === product._id);
-
-                    if (existingItem) {
-                        existingItem.quantity += 1;
-                    } else {
-                        cart.push({
-                            id: product._id,
-                            name: product.name,
-                            price: product.price,
-                            image: product.image,
-                            quantity: 1
+                document.getElementById('add-to-cart-btn').addEventListener('click', async () => {
+                    try {
+                        const response = await fetch(`${API_BASE_URL}/api/cart`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({
+                                userId: user._id || user.email,
+                                items: [{
+                                    productId: product._id,
+                                    name: product.name,
+                                    price: product.price,
+                                    image: product.image,
+                                    quantity: 1
+                                }]
+                            })
                         });
-                    }
 
-                    localStorage.setItem('cart', JSON.stringify(cart));
-                    alert(`${product.name} added to cart!`);
-                    updateCartCount();
+                        if (response.ok) {
+                            alert(`${product.name} added to cart!`);
+                            await updateCartCount();
+                        } else {
+                            const errorData = await response.json();
+                            throw new Error(errorData.error || 'Failed to add to cart');
+                        }
+                    } catch (error) {
+                        console.error('Error adding to cart:', error);
+                        alert(`Error: ${error.message}`);
+                    }
                 });
 
                 // Initialize cart count
-                updateCartCount();
+                await updateCartCount();
 
             } catch (error) {
                 console.error('Error loading product:', error);

@@ -51,23 +51,18 @@
         }
 
         .header-buttons {
-            display: flex;
-            gap: 15px;
+            position: absolute;
+            margin-top: 20px;
+            right: 50px;
+
         }
 
         .header-buttons a {
-            padding: 10px 20px;
-            font-weight: 600;
+            padding: 10px 15px;
+            margin-left: 20px;
+            font-weight: bold;
             text-decoration: none;
             color: white;
-            border-radius: 8px;
-            transition: all 0.3s ease;
-            background: rgba(255, 255, 255, 0.1);
-        }
-
-        .header-buttons a:hover {
-            background: rgba(255, 255, 255, 0.2);
-            transform: translateY(-2px);
         }
 
         .main-content {
@@ -149,6 +144,7 @@
             <div class="header-buttons">
                 <a href="customer.html">Home</a>
                 <a href="cart.html">Cart</a>
+                <a href="index.html">Logout</a>
             </div>
         </div>
     </header>
@@ -164,7 +160,6 @@
         document.addEventListener("DOMContentLoaded", async () => {
             const API_BASE_URL = 'http://localhost:3000';
             const storeGrid = document.getElementById('store-grid');
-            const storeHeader = document.getElementById('store-header');
 
             // Fetch all stores from the server
             async function fetchStores() {

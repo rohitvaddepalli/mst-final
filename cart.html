@@ -153,81 +153,119 @@
     </div>
 
     <script>
-        document.addEventListener('DOMContentLoaded', function () {
+        document.addEventListener('DOMContentLoaded', async function () {
+            const API_BASE_URL = 'http://localhost:3000';
+            const user = JSON.parse(localStorage.getItem('user'));
+            
+            if (!user || !user.email) {
+                alert('Please login to view your cart');
+                window.location.href = 'login_customer.html';
+                return;
+            }
+    
+            // Get user ID (you might need to modify your login response to include user ID)
+            const userId = user._id || user.email; // Use email as fallback if _id not available
+    
             const cart = {
-                items: JSON.parse(localStorage.getItem('cart')) || [],
-
-                // Save cart to localStorage
-                save: function () {
-                    localStorage.setItem('cart', JSON.stringify(this.items));
-                    this.updateUI();
+                items: [],
+                userId: userId,
+    
+                // Load cart from server
+                load: async function() {
+                    try {
+                        const response = await fetch(`${API_BASE_URL}/api/cart?userId=${encodeURIComponent(this.userId)}`);
+                        if (response.ok) {
+                            const data = await response.json();
+                            this.items = data.items || [];
+                            this.updateUI();
+                        }
+                    } catch (error) {
+                        console.error('Error loading cart:', error);
+                    }
                 },
-
+    
+                // Save cart to server
+                save: async function() {
+                    try {
+                        await fetch(`${API_BASE_URL}/api/cart`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                userId: this.userId,
+                                items: this.items
+                            })
+                        });
+                        this.updateUI();
+                    } catch (error) {
+                        console.error('Error saving cart:', error);
+                    }
+                },
+    
                 // Add item to cart
-                add: function (product, quantity = 1) {
-                    const existingItem = this.items.find(item => item.id === product.id);
-
+                add: async function(product, quantity = 1) {
+                    const existingItem = this.items.find(item => item.productId === product._id);
+    
                     if (existingItem) {
                         existingItem.quantity += quantity;
                     } else {
                         this.items.push({
-                            id: product.id,
+                            productId: product._id,
                             name: product.name,
                             price: product.price,
                             image: product.image,
                             quantity: quantity
                         });
                     }
-                    this.save();
+                    await this.save();
                 },
-
+    
                 // Remove item from cart
-                remove: function (productId) {
-                    this.items = this.items.filter(item => item.id !== productId);
-                    this.save();
+                remove: async function(productId) {
+                    this.items = this.items.filter(item => item.productId !== productId);
+                    await this.save();
                 },
-
+    
                 // Update item quantity
-                updateQuantity: function (productId, quantity) {
-                    const item = this.items.find(item => item.id === productId);
+                updateQuantity: async function(productId, quantity) {
+                    const item = this.items.find(item => item.productId === productId);
                     if (item) {
                         item.quantity = quantity;
-                        this.save();
+                        await this.save();
                     }
                 },
-
+    
                 // Calculate subtotal
-                getSubtotal: function () {
+                getSubtotal: function() {
                     return this.items.reduce((total, item) => total + (item.price * item.quantity), 0);
                 },
-
+    
                 // Calculate total (with shipping)
-                getTotal: function () {
+                getTotal: function() {
                     return this.getSubtotal() + 0; // Add shipping calculation if needed
                 },
-
+    
                 // Clear cart
-                clear: function () {
+                clear: async function() {
                     this.items = [];
-                    this.save();
+                    await this.save();
                 },
-
+    
                 // Render cart UI
-                updateUI: function () {
+                updateUI: function() {
                     const cartContent = document.getElementById('cart-content');
                     const cartSummary = document.getElementById('cart-summary');
-
+    
                     if (this.items.length === 0) {
                         cartContent.innerHTML = `
                             <div class="empty-cart">
                                 <p>Your cart is empty</p>
-                                <a href="store.html" class="continue-shopping">Continue Shopping</a>
+                                <a href="customer.html" class="continue-shopping">Continue Shopping</a>
                             </div>
                         `;
                         cartSummary.style.display = 'none';
                         return;
                     }
-
+    
                     // Render cart items
                     let html = `
                         <table class="cart-items">
@@ -242,7 +280,7 @@
                             </thead>
                             <tbody>
                     `;
-
+    
                     this.items.forEach(item => {
                         html += `
                             <tr>
@@ -257,102 +295,92 @@
                                 <td>₹${item.price.toFixed(2)}</td>
                                 <td>
                                     <div class="quantity-control">
-                                        <button class="quantity-btn minus" data-id="${item.id}">-</button>
+                                        <button class="quantity-btn minus" data-id="${item.productId}">-</button>
                                         <input type="number" 
                                                class="quantity-input" 
                                                value="${item.quantity}" 
                                                min="1"
-                                               data-id="${item.id}">
-                                        <button class="quantity-btn plus" data-id="${item.id}">+</button>
+                                               data-id="${item.productId}">
+                                        <button class="quantity-btn plus" data-id="${item.productId}">+</button>
                                     </div>
                                 </td>
                                 <td>₹${(item.price * item.quantity).toFixed(2)}</td>
                                 <td>
-                                    <button class="remove-btn" data-id="${item.id}">Remove</button>
+                                    <button class="remove-btn" data-id="${item.productId}">Remove</button>
                                 </td>
                             </tr>
                         `;
                     });
-
+    
                     html += `</tbody></table>`;
                     cartContent.innerHTML = html;
                     cartSummary.style.display = 'block';
-
+    
                     // Update summary
                     document.getElementById('subtotal').textContent = this.getSubtotal().toFixed(2);
                     document.getElementById('total').textContent = this.getTotal().toFixed(2);
-
+    
                     // Add event listeners
                     document.querySelectorAll('.quantity-btn.minus').forEach(btn => {
-                        btn.addEventListener('click', (e) => {
+                        btn.addEventListener('click', async (e) => {
                             const id = e.target.getAttribute('data-id');
                             const input = document.querySelector(`.quantity-input[data-id="${id}"]`);
                             let quantity = parseInt(input.value) - 1;
                             if (quantity < 1) quantity = 1;
                             input.value = quantity;
-                            this.updateQuantity(id, quantity);
+                            await this.updateQuantity(id, quantity);
                         });
                     });
-
+    
                     document.querySelectorAll('.quantity-btn.plus').forEach(btn => {
-                        btn.addEventListener('click', (e) => {
+                        btn.addEventListener('click', async (e) => {
                             const id = e.target.getAttribute('data-id');
                             const input = document.querySelector(`.quantity-input[data-id="${id}"]`);
                             const quantity = parseInt(input.value) + 1;
                             input.value = quantity;
-                            this.updateQuantity(id, quantity);
+                            await this.updateQuantity(id, quantity);
                         });
                     });
-
+    
                     document.querySelectorAll('.quantity-input').forEach(input => {
-                        input.addEventListener('change', (e) => {
+                        input.addEventListener('change', async (e) => {
                             const id = e.target.getAttribute('data-id');
                             let quantity = parseInt(e.target.value);
                             if (isNaN(quantity)) quantity = 1;
                             if (quantity < 1) quantity = 1;
                             e.target.value = quantity;
-                            this.updateQuantity(id, quantity);
+                            await this.updateQuantity(id, quantity);
                         });
                     });
-
+    
                     document.querySelectorAll('.remove-btn').forEach(btn => {
-                        btn.addEventListener('click', (e) => {
+                        btn.addEventListener('click', async (e) => {
                             const id = e.target.getAttribute('data-id');
-                            this.remove(id);
+                            await this.remove(id);
                         });
                     });
                 }
             };
-
-            // Initialize cart UI
-            cart.updateUI();
-
+    
+            // Initialize cart
+            await cart.load();
+    
             // Checkout button
-            document.getElementById('checkout-btn')?.addEventListener('click', function () {
+            document.getElementById('checkout-btn')?.addEventListener('click', function() {
                 if (cart.items.length === 0) return;
-
-                // For demo, we'll just redirect to checkout.html with the first item
-                // In a real app, you'd handle multiple items
-                const firstItem = cart.items[0];
-                window.location.href = `checkout.html?product=${firstItem.id}&name=${encodeURIComponent(firstItem.name)}&price=${firstItem.price}&image=${encodeURIComponent(firstItem.image || '')}`;
-            });
-
-            // Listen for storage events to sync cart across tabs
-            window.addEventListener('storage', function (e) {
-                if (e.key === 'cart') {
-                    cart.items = JSON.parse(e.newValue) || [];
-                    cart.updateUI();
-                }
-            });
-
-            document.getElementById('checkout-btn')?.addEventListener('click', function () {
-                if (cart.items.length === 0) return;
-
+    
                 // Redirect to checkout with all items
                 const itemsParam = cart.items.map(item =>
-                    `id=${item.id}&name=${encodeURIComponent(item.name)}&price=${item.price}`
+                    `id=${item.productId}&name=${encodeURIComponent(item.name)}&price=${item.price}`
                 ).join('&');
-                window.location.href = `checkout.html?${itemsParam}`;
+                
+                // Include store ID if available (you might need to modify this based on your store structure)
+                const storeId = ''; // Get store ID if needed
+                if (storeId) {
+                    window.location.href = `checkout.html?${itemsParam}&store=${storeId}`;
+                } else {
+                    window.location.href = `checkout.html?${itemsParam}`;
+                }
             });
         });
     </script>

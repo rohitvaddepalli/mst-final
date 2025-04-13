@@ -224,6 +224,7 @@
                 }
             }
 
+            // Render products to the grid with images
             function renderProducts(products) {
                 productGrid.innerHTML = '';
 
@@ -231,18 +232,18 @@
                     const productCard = document.createElement('div');
                     productCard.className = 'store-card';
 
-                productCard.innerHTML = `
-                    <div class="product-image-container">
-                        ${product.image ?
+                    productCard.innerHTML = `
+                        <div class="product-image-container">
+                            ${product.image ?
                             `<img src="${product.image}" alt="${product.name}" class="product-image">` :
                             `<div class="product-image-placeholder">${product.name.charAt(0).toUpperCase()}</div>`
                         }
-                    </div>
-                    <div class="product-name">${product.name}</div>
-                    <div class="product-price">₹${product.price.toFixed(2)}</div>
-                    <div class="product-stock">${product.stock} in stock</div>
-                    <a href="checkout.html?store=${storeId}&id=${product._id}&name=${encodeURIComponent(product.name)}&price=${product.price}" class="add-to-cart">Buy Now</a>
-                `;
+                        </div>
+                        <div class="product-name">${product.name}</div>
+                        <div class="product-price">₹${product.price.toFixed(2)}</div>
+                        <div class="product-stock">${product.stock} in stock</div>
+                        <a href="product-details.html?product=${product._id}" class="add-to-cart">Buy Now</a>
+                    `;
 
                     productGrid.appendChild(productCard);
                 });

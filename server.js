@@ -68,10 +68,11 @@ app.post('/api/login', async (req, res) => {
         res.status(200).json({
             message: 'Login successful',
             user: {
+                _id: user._id, // Include the user ID
+                fullname: user.fullname,
                 email: user.email
             }
         });
-
     } catch (error) {
         res.status(500).json({ error: 'Server error during login' });
     }
@@ -462,16 +463,18 @@ app.post('/api/orders', async (req, res) => {
 
 app.get('/api/orders', async (req, res) => {
     try {
-        const { storeId } = req.query;
+        const { storeId, email } = req.query;
         let query = {};
 
         if (storeId) {
             query.storeId = storeId;
         }
 
-        console.log('Fetching orders with query:', query); // Debug log
+        if (email) {
+            query.customerEmail = email;
+        }
+
         const orders = await Order.find(query).sort({ orderDate: -1 });
-        console.log('Found orders:', orders); // Debug log
         res.json(orders);
     } catch (error) {
         console.error('Error in /api/orders:', error);
@@ -617,5 +620,59 @@ app.post('/api/seller/login', async (req, res) => {
         });
     } catch (error) {
         res.status(500).json({ error: 'Server error during login' });
+    }
+});
+
+// Add this with your other models
+const Cart = mongoose.model('Cart', new mongoose.Schema({
+    userId: { type: mongoose.Schema.Types.ObjectId, required: true },
+    items: [{
+        productId: { type: mongoose.Schema.Types.ObjectId, ref: 'Product' },
+        name: String,
+        price: Number,
+        image: String,
+        quantity: { type: Number, default: 1 }
+    }],
+    updatedAt: { type: Date, default: Date.now }
+}));
+
+// Cart endpoints
+app.get('/api/cart', async (req, res) => {
+    try {
+        const { userId } = req.query;
+        if (!userId) {
+            return res.status(400).json({ error: 'User ID is required' });
+        }
+
+        let cart = await Cart.findOne({ userId }).populate('items.productId');
+        if (!cart) {
+            cart = new Cart({ userId, items: [] });
+            await cart.save();
+        }
+        res.json(cart);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+app.post('/api/cart', async (req, res) => {
+    try {
+        const { userId, items } = req.body;
+        if (!userId) {
+            return res.status(400).json({ error: 'User ID is required' });
+        }
+
+        let cart = await Cart.findOne({ userId });
+        if (!cart) {
+            cart = new Cart({ userId, items: [] });
+        }
+
+        cart.items = items;
+        cart.updatedAt = new Date();
+        await cart.save();
+
+        res.json(cart);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
     }
 });
