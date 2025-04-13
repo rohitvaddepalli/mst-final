@@ -106,6 +106,7 @@
             const productDisplay = document.getElementById('product-display');
             let total = 0;
             let products = [];
+            let storeId = urlParams.get('store');
 
             for (let i = 0; i < urlParams.getAll('id').length; i++) {
                 const product = {
@@ -143,7 +144,8 @@
                     customerEmail: document.getElementById('email').value,
                     customerAddress: document.getElementById('address').value,
                     paymentMethod: document.getElementById('payment').value,
-                    totalAmount: total
+                    totalAmount: total,
+                    storeId: storeId
                 };
 
                 try {
@@ -157,7 +159,12 @@
 
                     localStorage.removeItem('cart');
                     alert('Order placed successfully!');
-                    window.location.href = 'customer.html';
+
+                    if (storeId) {
+                        window.location.href = `store_customer.html?store=${storeId}`;
+                    } else {
+                        window.location.href = 'customer.html';
+                    }
                 } catch (error) {
                     console.error('Error:', error);
                     alert('Error placing order. Please try again.');

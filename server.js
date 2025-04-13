@@ -430,21 +430,21 @@ const Order = mongoose.model('Order', new mongoose.Schema({
 // Add this with your other endpoints
 app.post('/api/orders', async (req, res) => {
     try {
-        const { products, customerName, customerEmail, customerAddress, paymentMethod, totalAmount } = req.body;
+        const { products, customerName, customerEmail, customerAddress, paymentMethod, totalAmount, storeId } = req.body;
 
         if (!products || !products.length) {
             return res.status(400).json({ error: 'No products in order' });
         }
 
-        // Get storeId from first product
-        const firstProduct = await Product.findById(products[0].productId);
-        if (!firstProduct) {
-            return res.status(404).json({ error: 'Product not found' });
+        // Use provided storeId or get from first product
+        const effectiveStoreId = storeId || (await Product.findById(products[0].productId))?.storeId;
+        if (!effectiveStoreId) {
+            return res.status(404).json({ error: 'Store not found for these products' });
         }
 
         const order = new Order({
             products,
-            storeId: firstProduct.storeId,
+            storeId: effectiveStoreId,
             customerName,
             customerEmail,
             customerAddress,
