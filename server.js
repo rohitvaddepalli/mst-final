@@ -125,7 +125,6 @@ app.get('/api/products', async (req, res) => {
     }
 });
 
-// Add this endpoint with the other product CRUD endpoints
 // Update your GET product endpoint
 app.get('/api/products/:id', async (req, res) => {
     try {
@@ -200,8 +199,18 @@ app.put('/api/products/:id', async (req, res) => {
 
 app.delete('/api/products/:id', async (req, res) => {
     try {
-        const { id } = req.params;
-        await Product.findByIdAndDelete(id);
+        const product = await Product.findById(req.params.id);
+        if (!product) return res.status(404).json({ error: 'Product not found' });
+
+        // Delete the associated image file
+        if (product.image) {
+            const imagePath = path.join(__dirname, product.image);
+            fs.unlink(imagePath, (err) => {
+                if (err) console.error('Error deleting image:', err);
+            });
+        }
+
+        await Product.findByIdAndDelete(req.params.id);
         res.json({ message: 'Product deleted successfully' });
     } catch (error) {
         res.status(500).json({ error: error.message });
@@ -415,49 +424,119 @@ app.get('/api/stores/check-name', async (req, res) => {
 
 // Add this with your other models
 const Order = mongoose.model('Order', new mongoose.Schema({
-    productId: { type: mongoose.Schema.Types.ObjectId, ref: 'Product' },
+    products: [{
+        productId: { type: mongoose.Schema.Types.ObjectId, ref: 'Product' },
+        name: String,
+        price: Number,
+        quantity: { type: Number, default: 1 }
+    }],
     storeId: { type: mongoose.Schema.Types.ObjectId, ref: 'Store' },
-    productName: String,
-    price: Number,
-    quantity: { type: Number, default: 1 },
     customerName: String,
     customerEmail: String,
     customerAddress: String,
     paymentMethod: String,
     orderDate: { type: Date, default: Date.now },
-    status: { type: String, default: 'Pending' }
+    status: { type: String, default: 'Pending' },
+    totalAmount: Number
 }));
+
 
 // Add this with your other endpoints
 app.post('/api/orders', async (req, res) => {
     try {
         const { products, customerName, customerEmail, customerAddress, paymentMethod, totalAmount, storeId } = req.body;
 
-        if (!products || !products.length) {
-            return res.status(400).json({ error: 'No products in order' });
+        // Validate required fields
+        const missingFields = [];
+        if (!products || !products.length) missingFields.push('products');
+        if (!customerName) missingFields.push('customerName');
+        if (!customerEmail) missingFields.push('customerEmail');
+        if (!customerAddress) missingFields.push('customerAddress');
+        if (!paymentMethod) missingFields.push('paymentMethod');
+        if (!totalAmount) missingFields.push('totalAmount');
+        if (!storeId) missingFields.push('storeId');
+
+        if (missingFields.length > 0) {
+            return res.status(400).json({ 
+                error: 'Missing required fields',
+                missingFields
+            });
         }
 
-        // Use provided storeId or get from first product
-        const effectiveStoreId = storeId || (await Product.findById(products[0].productId))?.storeId;
-        if (!effectiveStoreId) {
-            return res.status(404).json({ error: 'Store not found for these products' });
+        // Validate email format
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customerEmail)) {
+            return res.status(400).json({ error: 'Invalid email format' });
         }
 
+        // Validate product IDs and quantities
+        for (const product of products) {
+            if (!ObjectId.isValid(product.productId)) {
+                return res.status(400).json({ error: 'Invalid product ID format' });
+            }
+            if (product.quantity < 1) {
+                return res.status(400).json({ error: 'Product quantity must be at least 1' });
+            }
+        }
+
+        // Validate store ID
+        if (!ObjectId.isValid(storeId)) {
+            return res.status(400).json({ error: 'Invalid store ID format' });
+        }
+
+        // Check if store exists
+        const storeExists = await Store.findById(storeId);
+        if (!storeExists) {
+            return res.status(404).json({ error: 'Store not found' });
+        }
+
+        // Check product availability
+        for (const item of products) {
+            const product = await Product.findById(item.productId);
+            if (!product) {
+                return res.status(404).json({ 
+                    error: `Product not found: ${item.productName}` 
+                });
+            }
+            if (product.stock < item.quantity) {
+                return res.status(400).json({ 
+                    error: `Insufficient stock for ${item.productName}` 
+                });
+            }
+        }
+
+        // Create the order
         const order = new Order({
-            products,
-            storeId: effectiveStoreId,
-            customerName,
-            customerEmail,
-            customerAddress,
+            products: products.map(p => ({
+                productId: p.productId,
+                name: p.productName,
+                price: p.price,
+                quantity: p.quantity
+            })),
+            storeId,
+            customerName: customerName.trim(),
+            customerEmail: customerEmail.trim(),
+            customerAddress: customerAddress.trim(),
             paymentMethod,
             totalAmount,
             status: 'Pending'
         });
 
         await order.save();
+        
+        // Update product stock levels
+        for (const item of products) {
+            await Product.findByIdAndUpdate(item.productId, {
+                $inc: { stock: -item.quantity }
+            });
+        }
+
         res.status(201).json(order);
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        console.error('Error creating order:', error);
+        res.status(500).json({ 
+            error: 'Failed to create order',
+            details: process.env.NODE_ENV === 'development' ? error.message : undefined
+        });
     }
 });
 
@@ -474,7 +553,10 @@ app.get('/api/orders', async (req, res) => {
             query.customerEmail = email;
         }
 
-        const orders = await Order.find(query).sort({ orderDate: -1 });
+        const orders = await Order.find(query)
+            .sort({ orderDate: -1 })
+            .populate('products.productId', 'name image'); // Populate product details
+
         res.json(orders);
     } catch (error) {
         console.error('Error in /api/orders:', error);
@@ -484,8 +566,11 @@ app.get('/api/orders', async (req, res) => {
 
 app.put('/api/orders/:id', async (req, res) => {
     try {
-        const { id } = req.params;
-        const order = await Order.findByIdAndUpdate(id, req.body, { new: true });
+        const order = await Order.findByIdAndUpdate(
+            req.params.id,
+            { status: req.body.status },
+            { new: true }
+        );
         res.json(order);
     } catch (error) {
         res.status(500).json({ error: error.message });
@@ -669,6 +754,28 @@ app.post('/api/cart', async (req, res) => {
 
         cart.items = items;
         cart.updatedAt = new Date();
+        await cart.save();
+
+        res.json(cart);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Add this to your server.js (with the other cart endpoints)
+app.delete('/api/cart/item', async (req, res) => {
+    try {
+        const { userId, productId } = req.query;
+        if (!userId || !productId) {
+            return res.status(400).json({ error: 'User ID and Product ID are required' });
+        }
+
+        const cart = await Cart.findOne({ userId });
+        if (!cart) {
+            return res.status(404).json({ error: 'Cart not found' });
+        }
+
+        cart.items = cart.items.filter(item => item.productId.toString() !== productId);
         await cart.save();
 
         res.json(cart);

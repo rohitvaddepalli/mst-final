@@ -108,41 +108,78 @@
             let products = [];
             let storeId = urlParams.get('store');
 
-            for (let i = 0; i < urlParams.getAll('id').length; i++) {
+            // Get the logged-in user from localStorage
+            const user = JSON.parse(localStorage.getItem('user'));
+            if (!user) {
+                alert('Please login to complete your order');
+                window.location.href = 'login_customer.html';
+                return;
+            }
+
+            // Get products from URL parameters
+            const productIds = urlParams.getAll('id');
+            const productNames = urlParams.getAll('name');
+            const productPrices = urlParams.getAll('price');
+            const productQuantities = urlParams.getAll('quantity');
+
+            for (let i = 0; i < productIds.length; i++) {
                 const product = {
-                    id: urlParams.getAll('id')[i],
-                    name: decodeURIComponent(urlParams.getAll('name')[i]),
-                    price: parseFloat(urlParams.getAll('price')[i])
+                    id: productIds[i],
+                    name: decodeURIComponent(productNames[i]),
+                    price: parseFloat(productPrices[i]),
+                    quantity: parseInt(productQuantities[i]) || 1
                 };
                 products.push(product);
-                total += product.price;
+                total += product.price * product.quantity;
+            }
+
+            // Pre-fill user details if available
+            if (user) {
+                document.getElementById('name').value = user.fullname || '';
+                document.getElementById('email').value = user.email || '';
             }
 
             if (products.length > 0) {
                 productDisplay.innerHTML = `
-                    <h3>Order Summary</h3>
-                    ${products.map(p => `
-                        <div class="product-item">
-                            <p>${p.name} - ₹${p.price.toFixed(2)}</p>
-                        </div>
-                    `).join('')}
-                    <p><strong>Total: ₹${total.toFixed(2)}</strong></p>
-                `;
+            <h3>Order Summary</h3>
+            ${products.map(p => `
+                <div class="product-item">
+                    <p>${p.name} (${p.quantity}) - ₹${(p.price * p.quantity).toFixed(2)}</p>
+                </div>
+            `).join('')}
+            <p><strong>Total: ₹${total.toFixed(2)}</strong></p>
+        `;
             }
 
             document.querySelector('form').addEventListener('submit', async function (e) {
                 e.preventDefault();
+
+                // Validate form fields
+                const name = document.getElementById('name').value.trim();
+                const email = document.getElementById('email').value.trim();
+                const address = document.getElementById('address').value.trim();
+
+                if (!name || !email || !address) {
+                    alert('Please fill in all required fields');
+                    return;
+                }
+
+                // Validate email format
+                if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+                    alert('Please enter a valid email address');
+                    return;
+                }
 
                 const orderData = {
                     products: products.map(p => ({
                         productId: p.id,
                         productName: p.name,
                         price: p.price,
-                        quantity: 1
+                        quantity: p.quantity
                     })),
-                    customerName: document.getElementById('name').value,
-                    customerEmail: document.getElementById('email').value,
-                    customerAddress: document.getElementById('address').value,
+                    customerName: name,
+                    customerEmail: email,
+                    customerAddress: address,
                     paymentMethod: document.getElementById('payment').value,
                     totalAmount: total,
                     storeId: storeId
@@ -155,20 +192,23 @@
                         body: JSON.stringify(orderData)
                     });
 
-                    if (!response.ok) throw new Error('Failed to place order');
+                    if (!response.ok) {
+                        const errorData = await response.json();
+                        throw new Error(errorData.error || 'Failed to place order');
+                    }
 
+                    // Clear cart after successful order
                     localStorage.removeItem('cart');
                     alert('Order placed successfully!');
 
                     if (storeId) {
                         window.location.href = `store_customer.html?store=${storeId}`;
-                    } 
-                    else {
+                    } else {
                         window.location.href = 'customer.html';
                     }
                 } catch (error) {
                     console.error('Error:', error);
-                    alert('Error placing order. Please try again.');
+                    alert(`Error placing order: ${error.message}`);
                 }
             });
         });

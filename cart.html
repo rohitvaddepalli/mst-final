@@ -156,22 +156,21 @@
         document.addEventListener('DOMContentLoaded', async function () {
             const API_BASE_URL = 'http://localhost:3000';
             const user = JSON.parse(localStorage.getItem('user'));
-            
+
             if (!user || !user.email) {
                 alert('Please login to view your cart');
                 window.location.href = 'login_customer.html';
                 return;
             }
-    
-            // Get user ID (you might need to modify your login response to include user ID)
-            const userId = user._id || user.email; // Use email as fallback if _id not available
-    
+
+            const userId = user._id || user.email;
+
             const cart = {
                 items: [],
                 userId: userId,
-    
+
                 // Load cart from server
-                load: async function() {
+                load: async function () {
                     try {
                         const response = await fetch(`${API_BASE_URL}/api/cart?userId=${encodeURIComponent(this.userId)}`);
                         if (response.ok) {
@@ -183,9 +182,9 @@
                         console.error('Error loading cart:', error);
                     }
                 },
-    
+
                 // Save cart to server
-                save: async function() {
+                save: async function () {
                     try {
                         await fetch(`${API_BASE_URL}/api/cart`, {
                             method: 'POST',
@@ -200,11 +199,11 @@
                         console.error('Error saving cart:', error);
                     }
                 },
-    
+
                 // Add item to cart
-                add: async function(product, quantity = 1) {
+                add: async function (product, quantity = 1) {
                     const existingItem = this.items.find(item => item.productId === product._id);
-    
+
                     if (existingItem) {
                         existingItem.quantity += quantity;
                     } else {
@@ -218,43 +217,55 @@
                     }
                     await this.save();
                 },
-    
+
                 // Remove item from cart
-                remove: async function(productId) {
-                    this.items = this.items.filter(item => item.productId !== productId);
-                    await this.save();
+                remove: async function (productId) {
+                    try {
+                        const response = await fetch(`${API_BASE_URL}/api/cart/item?userId=${encodeURIComponent(this.userId)}&productId=${encodeURIComponent(productId)}`, {
+                            method: 'DELETE'
+                        });
+
+                        if (response.ok) {
+                            this.items = this.items.filter(item => item.productId !== productId);
+                            this.updateUI();
+                        } else {
+                            console.error('Error removing item from cart');
+                        }
+                    } catch (error) {
+                        console.error('Error removing item:', error);
+                    }
                 },
-    
+
                 // Update item quantity
-                updateQuantity: async function(productId, quantity) {
+                updateQuantity: async function (productId, quantity) {
                     const item = this.items.find(item => item.productId === productId);
                     if (item) {
                         item.quantity = quantity;
                         await this.save();
                     }
                 },
-    
+
                 // Calculate subtotal
-                getSubtotal: function() {
+                getSubtotal: function () {
                     return this.items.reduce((total, item) => total + (item.price * item.quantity), 0);
                 },
-    
+
                 // Calculate total (with shipping)
-                getTotal: function() {
+                getTotal: function () {
                     return this.getSubtotal() + 0; // Add shipping calculation if needed
                 },
-    
+
                 // Clear cart
-                clear: async function() {
+                clear: async function () {
                     this.items = [];
                     await this.save();
                 },
-    
+
                 // Render cart UI
-                updateUI: function() {
+                updateUI: function () {
                     const cartContent = document.getElementById('cart-content');
                     const cartSummary = document.getElementById('cart-summary');
-    
+
                     if (this.items.length === 0) {
                         cartContent.innerHTML = `
                             <div class="empty-cart">
@@ -265,7 +276,7 @@
                         cartSummary.style.display = 'none';
                         return;
                     }
-    
+
                     // Render cart items
                     let html = `
                         <table class="cart-items">
@@ -280,7 +291,7 @@
                             </thead>
                             <tbody>
                     `;
-    
+
                     this.items.forEach(item => {
                         html += `
                             <tr>
@@ -311,15 +322,15 @@
                             </tr>
                         `;
                     });
-    
+
                     html += `</tbody></table>`;
                     cartContent.innerHTML = html;
                     cartSummary.style.display = 'block';
-    
+
                     // Update summary
                     document.getElementById('subtotal').textContent = this.getSubtotal().toFixed(2);
                     document.getElementById('total').textContent = this.getTotal().toFixed(2);
-    
+
                     // Add event listeners
                     document.querySelectorAll('.quantity-btn.minus').forEach(btn => {
                         btn.addEventListener('click', async (e) => {
@@ -331,7 +342,7 @@
                             await this.updateQuantity(id, quantity);
                         });
                     });
-    
+
                     document.querySelectorAll('.quantity-btn.plus').forEach(btn => {
                         btn.addEventListener('click', async (e) => {
                             const id = e.target.getAttribute('data-id');
@@ -341,7 +352,7 @@
                             await this.updateQuantity(id, quantity);
                         });
                     });
-    
+
                     document.querySelectorAll('.quantity-input').forEach(input => {
                         input.addEventListener('change', async (e) => {
                             const id = e.target.getAttribute('data-id');
@@ -352,7 +363,7 @@
                             await this.updateQuantity(id, quantity);
                         });
                     });
-    
+
                     document.querySelectorAll('.remove-btn').forEach(btn => {
                         btn.addEventListener('click', async (e) => {
                             const id = e.target.getAttribute('data-id');
@@ -361,26 +372,25 @@
                     });
                 }
             };
-    
+
             // Initialize cart
             await cart.load();
-    
+
             // Checkout button
-            document.getElementById('checkout-btn')?.addEventListener('click', function() {
+            document.getElementById('checkout-btn')?.addEventListener('click', function () {
                 if (cart.items.length === 0) return;
-    
-                // Redirect to checkout with all items
+
+                const storeId = cart.items[0].productId.storeId;
                 const itemsParam = cart.items.map(item =>
-                    `id=${item.productId}&name=${encodeURIComponent(item.name)}&price=${item.price}`
+                    `id=${item.productId._id}&name=${encodeURIComponent(item.name)}&price=${item.price}&quantity=${item.quantity}`
                 ).join('&');
-                
-                // Include store ID if available (you might need to modify this based on your store structure)
-                const storeId = ''; // Get store ID if needed
-                if (storeId) {
-                    window.location.href = `checkout.html?${itemsParam}&store=${storeId}`;
-                } else {
-                    window.location.href = `checkout.html?${itemsParam}`;
-                }
+
+                window.location.href = `checkout.html?store=${storeId}&${itemsParam}`;
+            });
+
+            // Clear cart button (optional)
+            document.getElementById('clear-cart-btn')?.addEventListener('click', async function () {
+                await cart.clear();
             });
         });
     </script>

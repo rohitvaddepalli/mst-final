@@ -65,65 +65,14 @@
             background: rgba(255, 255, 255, 0.1);
         }
 
-        .header-buttons a:hover {
-            background: rgba(255, 255, 255, 0.2);
-            transform: translateY(-2px);
-        }
-
         .main-content {
             max-width: 1200px;
             margin: 0 auto;
             padding: 20px;
         }
 
-        .track-form {
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 12px;
-            padding: 30px;
-            margin-bottom: 30px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.05);
-        }
-
-        .form-group {
-            margin-bottom: 20px;
-        }
-
-        label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: 600;
-        }
-
-        input[type="email"] {
-            width: 100%;
-            padding: 12px;
-            border-radius: 8px;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            background: rgba(255, 255, 255, 0.05);
-            color: white;
-            font-size: 16px;
-        }
-
-        button {
-            background: linear-gradient(to right, #8b5cf6, #3b82f6);
-            color: white;
-            border: none;
-            padding: 12px 24px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: 600;
-            font-size: 16px;
-            transition: all 0.3s ease;
-        }
-
-        button:hover {
-            opacity: 0.9;
-            transform: translateY(-2px);
-        }
-
         .orders-container {
-            display: none;
+            display: block;
         }
 
         .order-card {
@@ -134,12 +83,6 @@
             transition: all 0.3s ease;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
             border: 1px solid rgba(255, 255, 255, 0.05);
-        }
-
-        .order-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
-            border-color: rgba(255, 255, 255, 0.2);
         }
 
         .order-header {
@@ -248,36 +191,13 @@
             animation: spin 1s linear infinite;
             margin: 0 auto 20px;
         }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        @media (max-width: 768px) {
-            .header-content {
-                flex-direction: column;
-                gap: 15px;
-            }
-
-            .header-buttons {
-                width: 100%;
-                justify-content: center;
-                flex-wrap: wrap;
-            }
-
-            .order-header {
-                flex-direction: column;
-                gap: 10px;
-            }
-        }
     </style>
 </head>
 
 <body>
     <header>
         <div class="header-content">
-            <h1>Track Your Order</h1>
+            <h1>Your Orders</h1>
             <div class="header-buttons">
                 <a href="customer.html">Home</a>
                 <a href="cart.html">Cart</a>
@@ -287,83 +207,62 @@
     </header>
 
     <div class="main-content">
-        <h2>Track Your Orders</h2>
-        
-        <div class="track-form">
-            <div class="form-group">
-                <label for="email">Enter your email address</label>
-                <input type="email" id="email" placeholder="your@email.com" required>
-            </div>
-            <button id="track-button">Track Orders</button>
-        </div>
+        <h2>Order History</h2>
 
         <div class="orders-container" id="orders-container">
-            <h3>Your Orders</h3>
             <div id="orders-list">
-                <!-- Orders will be loaded here dynamically -->
+                <div class="loading">
+                    <div class="loading-spinner"></div>
+                    <p>Loading your orders...</p>
+                </div>
             </div>
         </div>
     </div>
 
     <script>
-        document.addEventListener("DOMContentLoaded", () => {
+        document.addEventListener("DOMContentLoaded", async () => {
             const API_BASE_URL = 'http://localhost:3000';
-            const trackButton = document.getElementById('track-button');
-            const emailInput = document.getElementById('email');
-            const ordersContainer = document.getElementById('orders-container');
             const ordersList = document.getElementById('orders-list');
 
-            trackButton.addEventListener('click', async () => {
-                const email = emailInput.value.trim();
-                
-                if (!email) {
-                    alert('Please enter your email address');
+            // Check if user is logged in
+            const user = JSON.parse(localStorage.getItem('user'));
+            if (!user) {
+                alert('Please login to view your orders');
+                window.location.href = 'login_customer.html';
+                return;
+            }
+
+            try {
+                // Fetch orders for the logged-in user
+                const response = await fetch(`${API_BASE_URL}/api/orders?email=${encodeURIComponent(user.email)}`);
+                if (!response.ok) throw new Error('Failed to fetch orders');
+
+                const orders = await response.json();
+
+                if (orders.length === 0) {
+                    ordersList.innerHTML = `
+                        <div class="no-orders">
+                            <p>You haven't placed any orders yet.</p>
+                            <p>Start shopping to see your orders here!</p>
+                        </div>
+                    `;
                     return;
                 }
 
-                try {
-                    ordersList.innerHTML = `
-                        <div class="loading">
-                            <div class="loading-spinner"></div>
-                            <p>Loading your orders...</p>
-                        </div>
-                    `;
-                    ordersContainer.style.display = 'block';
-
-                    const response = await fetch(`${API_BASE_URL}/api/orders?email=${encodeURIComponent(email)}`);
-                    
-                    if (!response.ok) {
-                        throw new Error('Failed to fetch orders');
-                    }
-
-                    const orders = await response.json();
-
-                    if (orders.length === 0) {
-                        ordersList.innerHTML = `
-                            <div class="no-orders">
-                                <p>No orders found for this email address.</p>
-                                <p>Please check your email or shop with us!</p>
-                            </div>
-                        `;
-                        return;
-                    }
-
-                    renderOrders(orders);
-                } catch (error) {
-                    console.error('Error fetching orders:', error);
-                    ordersList.innerHTML = `
-                        <div class="no-orders">
-                            <p>Error loading orders: ${error.message}</p>
-                            <p>Please try again later.</p>
-                        </div>
-                    `;
-                }
-            });
+                renderOrders(orders);
+            } catch (error) {
+                console.error('Error fetching orders:', error);
+                ordersList.innerHTML = `
+                    <div class="no-orders">
+                        <p>Error loading your orders: ${error.message}</p>
+                        <p>Please try again later.</p>
+                    </div>
+                `;
+            }
 
             function renderOrders(orders) {
                 ordersList.innerHTML = '';
 
-                // Sort orders by date (newest first)
                 orders.sort((a, b) => new Date(b.orderDate) - new Date(a.orderDate));
 
                 orders.forEach(order => {
@@ -375,42 +274,45 @@
                         minute: '2-digit'
                     });
 
-                    const orderCard = document.createElement('div');
-                    orderCard.className = 'order-card';
-
-                    // Get status class based on order status
                     let statusClass = 'status-pending';
                     if (order.status === 'Shipped') statusClass = 'status-shipped';
                     if (order.status === 'Delivered') statusClass = 'status-delivered';
                     if (order.status === 'Cancelled') statusClass = 'status-cancelled';
 
+                    // Check if products exist and is an array
+                    const productsToRender = Array.isArray(order.products) ? order.products : [];
+
+                    // Create the order card element
+                    const orderCard = document.createElement('div');
+                    orderCard.className = 'order-card';
+
                     orderCard.innerHTML = `
-                        <div class="order-header">
-                            <div>
-                                <span class="order-id">Order #${order._id.slice(-8).toUpperCase()}</span>
-                                <span class="order-date">${orderDate}</span>
+            <div class="order-header">
+                <div>
+                    <span class="order-id">Order #${order._id.slice(-8).toUpperCase()}</span>
+                    <span class="order-date">${orderDate}</span>
+                </div>
+                <span class="order-status ${statusClass}">${order.status}</span>
+            </div>
+            <div class="order-products">
+                ${productsToRender.map(product => `
+                    <div class="product-item">
+                        <img src="${product.image || 'https://via.placeholder.com/60'}" 
+                             alt="${product.name || 'Product'}" 
+                             class="product-image">
+                        <div class="product-info">
+                            <div class="product-name">${product.name || 'Product'}</div>
+                            <div class="product-price">
+                                ₹${(product.price || 0).toFixed(2)} × ${product.quantity || 1}
                             </div>
-                            <span class="order-status ${statusClass}">${order.status}</span>
                         </div>
-                        <div class="order-products">
-                            ${order.products.map(product => `
-                                <div class="product-item">
-                                    <img src="${product.image || 'https://via.placeholder.com/60'}" 
-                                         alt="${product.productName}" 
-                                         class="product-image">
-                                    <div class="product-info">
-                                        <div class="product-name">${product.productName}</div>
-                                        <div class="product-price">
-                                            ₹${product.price.toFixed(2)} × ${product.quantity}
-                                        </div>
-                                    </div>
-                                </div>
-                            `).join('')}
-                        </div>
-                        <div class="order-total">
-                            Total: ₹${order.totalAmount.toFixed(2)}
-                        </div>
-                    `;
+                    </div>
+                `).join('')}
+            </div>
+            <div class="order-total">
+                Total: ₹${(order.totalAmount || 0).toFixed(2)}
+            </div>
+        `;
 
                     ordersList.appendChild(orderCard);
                 });
