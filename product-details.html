@@ -115,15 +115,12 @@
 
 <body>
     <header>
-        <h1 id="store-title">My Store</h1>
+        <h1><a href="customer.html" style="text-decoration: none; color: inherit;">My Store</a></h1>
         <h2 id="product-welcome">Product Details</h2>
         <div>
             <div class="header-buttons">
                 <a href="#" id="back-to-store">Back to Store</a>
                 <a href="customer.html">Home</a>
-                <a href="cart.html" class="cart-link">
-                    Cart <span id="cart-count"></span>
-                </a>
             </div>
         </div>
     </header>
@@ -137,7 +134,7 @@
         <p id="product-price">Price: -</p>
         <p id="product-stock">Availability: -</p><br><br>
         <div class="button">
-            <button id="add-to-cart-btn">Add to Cart</button>
+            <button id="add-to-cart-btn">Buy now</button>
         </div>
     </div>
 
@@ -162,27 +159,6 @@
                 return;
             }
 
-            // Function to update cart count in header
-            async function updateCartCount() {
-                try {
-                    const response = await fetch(`${API_BASE_URL}/api/cart?userId=${encodeURIComponent(user._id || user.email)}`);
-                    if (response.ok) {
-                        const cart = await response.json();
-                        const totalItems = cart.items.reduce((total, item) => total + item.quantity, 0);
-                        const cartCountElement = document.getElementById('cart-count');
-
-                        if (totalItems > 0) {
-                            cartCountElement.textContent = totalItems;
-                            cartCountElement.style.display = 'inline-block';
-                        } else {
-                            cartCountElement.style.display = 'none';
-                        }
-                    }
-                } catch (error) {
-                    console.error('Error updating cart count:', error);
-                }
-            }
-
             try {
                 const response = await fetch(`${API_BASE_URL}/api/products/${productId}`);
                 if (!response.ok) throw new Error('Failed to fetch product');
@@ -202,72 +178,35 @@
                 }
 
                 // Add to cart functionality
-                document.getElementById('add-to-cart-btn').addEventListener('click', async () => {
-                    try {
-                        const response = await fetch(`${API_BASE_URL}/api/cart`, {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                            },
-                            body: JSON.stringify({
-                                userId: user._id || user.email,
-                                items: [{
-                                    productId: product._id,
-                                    name: product.name,
-                                    price: product.price,
-                                    image: product.image,
-                                    quantity: 1
-                                }]
-                            })
-                        });
+                document.getElementById('add-to-cart-btn').addEventListener('click', () => {
+                    window.location.href = `checkout.html?store=${product.storeId}&id=${product._id}&name=${encodeURIComponent(product.name)}&price=${product.price}&quantity=1`;
+                });
 
-                        if (response.ok) {
-                            alert(`${product.name} added to cart!`);
-                            await updateCartCount();
-                        } else {
-                            const errorData = await response.json();
-                            throw new Error(errorData.error || 'Failed to add to cart');
-                        }
-                    } catch (error) {
-                        console.error('Error adding to cart:', error);
-                        alert(`Error: ${error.message}`);
+                // Add back button functionality
+                document.getElementById('back-to-store').addEventListener('click', () => {
+                    const urlParams = new URLSearchParams(window.location.search);
+                    const storeId = urlParams.get('store');
+                    if (storeId) {
+                        window.location.href = `store_customer.html?store=${storeId}`;
+                    } else {
+                        window.location.href = 'customer.html';
                     }
                 });
 
-                // Initialize cart count
-                await updateCartCount();
-
-            } catch (error) {
-                console.error('Error loading product:', error);
-                document.getElementById('product-details').innerHTML = `
-                    <h3>Error loading product</h3>
-                    <p>${error.message}</p>
-                    <a href="store.html">Back to Store</a>
-                `;
-            }
-
-            // Add back button functionality
-            document.getElementById('back-to-store').addEventListener('click', () => {
-                const urlParams = new URLSearchParams(window.location.search);
-                const storeId = urlParams.get('store');
-                if (storeId) {
-                    window.location.href = `store_customer.html?store=${storeId}`;
-                } else {
-                    window.location.href = 'customer.html';
+                    // Update all product links to include store ID
+                    document.querySelectorAll('a[href^="product-details.html"]').forEach(link => {
+                        const urlParams = new URLSearchParams(window.location.search);
+                        const storeId = urlParams.get('store');
+                        if (storeId) {
+                            const href = new URL(link.href);
+                            href.searchParams.set('store', storeId);
+                            link.href = href.toString();
+                        }
+                    });
+                } catch (error) {
+                    console.error('Error loading product details:', error);
                 }
             });
-
-            // Update all product links to include store ID
-            document.querySelectorAll('a[href^="product-details.html"]').forEach(link => {
-                const urlParams = new URLSearchParams(window.location.search);
-                const storeId = urlParams.get('store');
-                if (storeId) {
-                    const href = new URL(link.href);
-                    href.searchParams.set('store', storeId);
-                    link.href = href.toString();
-                }
-            });
-        });
     </script>
 </body>
 

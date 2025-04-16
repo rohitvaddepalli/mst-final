@@ -219,7 +219,6 @@
                     <li class="nav-item" data-section="store-front">Store Front</li>
                     <li class="nav-item" data-section="products">Products</li>
                     <li class="nav-item" data-section="orders">Orders</li>
-                    <li class="nav-item" data-section="analytics">Analytics</li>
                 </ul>
             </nav>
             <button id="logout-btn" class="btn" style="margin-top: auto; margin-bottom: 20px;">Logout</button>
@@ -318,15 +317,6 @@
                 </tbody>
             </table>
         </section>
-
-        <!-- Analytics Section -->
-        <section id="analytics" class="section" aria-labelledby="analytics-heading">
-            <h2 id="analytics-heading" style="margin: 70px;">Analytics</h2>
-            <div class="analytics-content">
-                <!-- Analytics content will go here -->
-                <p>Analytics data will be displayed here.</p>
-            </div>
-        </section>
     </div>
 
     <script>
@@ -346,15 +336,12 @@
                 document.getElementById(sectionId).classList.add("active");
             }
 
-            // Add this to your existing script section
             document.getElementById('logout-btn').addEventListener('click', () => {
                 window.location.href = 'index.html';
             });
 
-            // Load store data from localStorage or fetch from server
             async function loadStoreData() {
                 try {
-                    // First try to get from localStorage
                     const storedStore = localStorage.getItem('currentStore');
                     if (storedStore) {
                         currentStore = JSON.parse(storedStore);
@@ -362,7 +349,6 @@
                         return;
                     }
 
-                    // If not in localStorage, fetch from server
                     const seller = JSON.parse(localStorage.getItem('seller'));
                     if (!seller || !seller.id) {
                         console.error('No seller logged in');
@@ -384,7 +370,6 @@
                 }
             }
 
-            // Update the store display with current data
             function updateStoreDisplay() {
                 if (!currentStore) return;
 
@@ -394,7 +379,6 @@
 
                 storeNameElement.textContent = currentStore.storeName || 'My Store';
 
-                // Create proper store URL
                 const storeUrl = `${window.location.protocol}//${window.location.host}/store_customer.html?store=${currentStore._id || currentStore.id}`;
                 storeLinkElement.textContent = currentStore.storeName ?
                     `${currentStore.storeName.toLowerCase().replace(/\s+/g, '-')}.com` :
@@ -411,15 +395,12 @@
                         currentStore.storeName.charAt(0).toUpperCase() : 'S';
                 }
 
-                // Update the sidebar store name
                 const sidebarTitle = document.querySelector('.sidebar h2');
                 if (sidebarTitle && currentStore.storeName) {
                     sidebarTitle.textContent = currentStore.storeName;
                 }
             }
 
-            // Add this to your existing DOMContentLoaded function
-            // Right after the other function declarations but before fetchProducts()
             loadStoreData();
             fetchProducts();
 
@@ -430,10 +411,10 @@
 
                     // Load data when section is shown
                     if (sectionId === 'orders') {
-                        await loadStoreData(); // Ensure currentStore is loaded
+                        await loadStoreData();
                         await renderOrders();
                     } else if (sectionId === 'analytics') {
-                        await loadStoreData(); // Ensure currentStore is loaded 
+                        await loadStoreData();
                         await renderAnalytics();
                     }
                 });
@@ -444,7 +425,6 @@
 
             async function fetchProducts() {
                 try {
-                    // Ensure currentStore is loaded
                     if (!currentStore) {
                         await loadStoreData();
                         if (!currentStore) {
@@ -513,7 +493,6 @@
                     return;
                 }
 
-                // Ensure we have a current store
                 if (!currentStore || !currentStore._id) {
                     alert("No store selected. Please create or select a store first.");
                     return;
@@ -534,7 +513,6 @@
                     const response = await fetch(`${API_BASE_URL}/api/products`, {
                         method: 'POST',
                         body: formData
-                        // Don't set Content-Type header - let the browser set it with boundary
                     });
 
                     if (!response.ok) {
@@ -546,7 +524,6 @@
                     products.push(newProduct);
                     renderProducts();
 
-                    // Reset form
                     nameInput.value = "";
                     descriptionInput.value = "";
                     priceInput.value = "";
@@ -644,7 +621,6 @@
                 const newStock = prompt("Enter new stock:", product.stock);
                 if (newStock === null) return;
 
-                // For image, we'll need to create a file input dialog
                 const input = document.createElement('input');
                 input.type = 'file';
                 input.accept = 'image/*';
@@ -687,7 +663,6 @@
             fetchProducts();
         });
 
-        // Add edit store functionality
         document.querySelector('.store-actions .edit-btn')?.addEventListener('click', () => {
             if (!currentStore) return;
 
@@ -751,10 +726,8 @@
             }
         }
 
-        // Order-related functions
         async function fetchOrders() {
             try {
-                // Ensure currentStore is loaded
                 if (!currentStore) {
                     await loadStoreData();
                     if (!currentStore) {
@@ -793,15 +766,12 @@
                 }
 
                 ordersBody.innerHTML = orders.map(order => {
-                    // Get product names
                     const productNames = order.products.map(p => p.name).join(', ');
 
-                    // Calculate total price
                     const totalPrice = order.products.reduce((sum, product) => {
                         return sum + (product.price * product.quantity);
                     }, 0);
 
-                    // Format customer info
                     const customerInfo = order.customerName ?
                         `${order.customerName}<br>${order.customerEmail}` :
                         order.customerEmail || '';
@@ -823,14 +793,13 @@
                     </td>
                     <td>${new Date(order.orderDate).toLocaleDateString()}</td>
                     <td>
-                        <button class="btn btn-small view-btn">View</button>
+                        <button class="btn btn-small view-btn">Submit</button>
                         <button class="btn btn-small delete-btn">Delete</button>
                     </td>
                 </tr>
             `;
                 }).join('');
 
-                // Add event listeners
                 document.querySelectorAll('.status-select').forEach(select => {
                     select.addEventListener('change', async (e) => {
                         const orderId = e.target.getAttribute('data-id');
@@ -867,7 +836,6 @@
 
                 if (!response.ok) throw new Error('Failed to update order status');
 
-                // Update local orders array
                 const orderIndex = orders.findIndex(o => o._id === orderId);
                 if (orderIndex !== -1) {
                     orders[orderIndex].status = newStatus;
@@ -887,63 +855,11 @@
                 if (!response.ok) throw new Error('Failed to delete order');
             } catch (error) {
                 console.error('Error deleting order:', error);
-                throw error; // Re-throw to be handled by caller
+                throw error;
             }
         }
 
-        // Call renderOrders() when the orders section is shown
         document.querySelector('[data-section="orders"]').addEventListener('click', renderOrders);
-
-        async function renderAnalytics() {
-            try {
-                // Get sales data
-                const salesResponse = await fetch(`${API_BASE_URL}/api/orders/analytics?storeId=${currentStore._id}`);
-                if (!salesResponse.ok) throw new Error('Failed to fetch sales data');
-                const salesData = await salesResponse.json();
-
-                // Get popular products
-                const productsResponse = await fetch(`${API_BASE_URL}/api/products/analytics?storeId=${currentStore._id}`);
-                if (!productsResponse.ok) throw new Error('Failed to fetch product analytics');
-                const productsData = await productsResponse.json();
-
-                // Render charts (using Chart.js or similar)
-                renderSalesChart(salesData);
-                renderProductsChart(productsData);
-            } catch (error) {
-                console.error('Error loading analytics:', error);
-                document.querySelector('.analytics-content').innerHTML = `
-            <div class="error-message">
-                Error loading analytics data: ${error.message}
-            </div>
-        `;
-            }
-        }
-
-        function renderSalesChart(data) {
-            // Implement chart rendering logic
-            const ctx = document.getElementById('sales-chart').getContext('2d');
-            new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: data.labels,
-                    datasets: [{
-                        label: 'Sales',
-                        data: data.values,
-                        backgroundColor: 'rgba(139, 92, 246, 0.2)',
-                        borderColor: 'rgba(139, 92, 246, 1)',
-                        borderWidth: 2
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    scales: {
-                        y: {
-                            beginAtZero: true
-                        }
-                    }
-                }
-            });
-        }
     </script>
 </body>
 

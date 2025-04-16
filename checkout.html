@@ -10,9 +10,60 @@
             font-family: 'Inter', sans-serif;
             background-image: linear-gradient(to bottom right, #1f2937, #5b21b6, #000000);
             color: white;
-            height: 100vh;
+            height: 100%;
             margin: 0;
             padding: 0;
+        }
+
+        header {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+            position: relative;
+        }
+
+        .header-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 1.8rem;
+            background: linear-gradient(to right, #8b5cf6, #3b82f6);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+
+        h2 {
+            text-align: center;
+            font-size: 2rem;
+            margin: 20px 0;
+            background: linear-gradient(to right, #8b5cf6, #3b82f6);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+
+        .header-buttons {
+            position: absolute;
+            top: 20px;
+            right: 50px;
+            display: flex;
+            gap: 15px;
+        }
+
+        .header-buttons a {
+            padding: 10px 15px;
+            font-weight: bold;
+            text-decoration: none;
+            color: white;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 5px;
         }
 
         .container {
@@ -71,11 +122,27 @@
 </head>
 
 <body>
+    <header>
+        <h1><a href="customer.html" style="text-decoration: none; color: inherit;">My Store</a></h1>
+        <h2 id="product-welcome">Product Details</h2>
+        <div>
+            <div class="header-buttons">
+                <a href="#" id="back-to-store">Back to Store</a>
+                <a href="customer.html">Home</a>
+                <a href="cart.html" class="cart-link">
+                    Cart <span id="cart-count"></span>
+                </a>
+            </div>
+        </div>
+    </header>
+
     <div class="container">
         <div class="product" id="product-display">
             <img id="product-image" src="" alt="Product Image">
+            <h3 id="product-name"></h3>
             <p id="product-description"></p>
             <p id="product-price"></p>
+            <p id="product-quantity"></p>
         </div>
         <h2>Checkout</h2>
         <form>
@@ -101,7 +168,7 @@
         </form>
     </div>
     <script>
-        document.addEventListener('DOMContentLoaded', function () {
+        document.addEventListener('DOMContentLoaded', async function () {
             const urlParams = new URLSearchParams(window.location.search);
             const productDisplay = document.getElementById('product-display');
             let total = 0;
@@ -116,21 +183,35 @@
                 return;
             }
 
-            // Get products from URL parameters
-            const productIds = urlParams.getAll('id');
-            const productNames = urlParams.getAll('name');
-            const productPrices = urlParams.getAll('price');
-            const productQuantities = urlParams.getAll('quantity');
+            // Get product details from URL
+            const product = {
+                id: urlParams.get('id'),
+                name: decodeURIComponent(urlParams.get('name')),
+                price: parseFloat(urlParams.get('price')),
+                quantity: parseInt(urlParams.get('quantity')) || 1
+            };
+            products.push(product);
+            total = product.price * product.quantity;
 
-            for (let i = 0; i < productIds.length; i++) {
-                const product = {
-                    id: productIds[i],
-                    name: decodeURIComponent(productNames[i]),
-                    price: parseFloat(productPrices[i]),
-                    quantity: parseInt(productQuantities[i]) || 1
-                };
-                products.push(product);
-                total += product.price * product.quantity;
+            // Display product details
+            document.getElementById('product-name').textContent = product.name;
+            document.getElementById('product-price').textContent = `Price: ₹${product.price.toFixed(2)}`;
+            document.getElementById('product-quantity').textContent = `Quantity: ${product.quantity}`;
+
+            // Try to fetch product image if available
+            try {
+                const response = await fetch(`http://localhost:3000/api/products/${product.id}`);
+                if (response.ok) {
+                    const productData = await response.json();
+                    if (productData.image) {
+                        document.getElementById('product-image').src = productData.image;
+                    }
+                    if (productData.description) {
+                        document.getElementById('product-description').textContent = productData.description;
+                    }
+                }
+            } catch (error) {
+                console.error('Error fetching product details:', error);
             }
 
             // Pre-fill user details if available
@@ -139,18 +220,7 @@
                 document.getElementById('email').value = user.email || '';
             }
 
-            if (products.length > 0) {
-                productDisplay.innerHTML = `
-            <h3>Order Summary</h3>
-            ${products.map(p => `
-                <div class="product-item">
-                    <p>${p.name} (${p.quantity}) - ₹${(p.price * p.quantity).toFixed(2)}</p>
-                </div>
-            `).join('')}
-            <p><strong>Total: ₹${total.toFixed(2)}</strong></p>
-        `;
-            }
-
+            // Rest of the existing checkout form submission code remains the same
             document.querySelector('form').addEventListener('submit', async function (e) {
                 e.preventDefault();
 
@@ -197,15 +267,8 @@
                         throw new Error(errorData.error || 'Failed to place order');
                     }
 
-                    // Clear cart after successful order
-                    localStorage.removeItem('cart');
                     alert('Order placed successfully!');
-
-                    if (storeId) {
-                        window.location.href = `store_customer.html?store=${storeId}`;
-                    } else {
-                        window.location.href = 'customer.html';
-                    }
+                    window.location.href = `store_customer.html?store=${storeId}`;
                 } catch (error) {
                     console.error('Error:', error);
                     alert(`Error placing order: ${error.message}`);
