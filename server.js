@@ -19,7 +19,6 @@ app.use(bodyParser.json());
 
 const mongoURI = 'mongodb+srv://rohitvaddepalli:oiKUkWyTbPW9KkdH@cluster0.xlefa4l.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0';
 
-
 mongoose.connect(mongoURI, {
     useNewUrlParser: true,
     useUnifiedTopology: true
@@ -68,7 +67,7 @@ app.post('/api/login', async (req, res) => {
         res.status(200).json({
             message: 'Login successful',
             user: {
-                _id: user._id, // Include the user ID
+                _id: user._id,
                 fullname: user.fullname,
                 email: user.email
             }
@@ -434,6 +433,7 @@ const Order = mongoose.model('Order', new mongoose.Schema({
     customerName: String,
     customerEmail: String,
     customerAddress: String,
+    customerPhone: String,
     paymentMethod: String,
     orderDate: { type: Date, default: Date.now },
     status: { type: String, default: 'Pending' },
@@ -444,7 +444,7 @@ const Order = mongoose.model('Order', new mongoose.Schema({
 // Add this with your other endpoints
 app.post('/api/orders', async (req, res) => {
     try {
-        const { products, customerName, customerEmail, customerAddress, paymentMethod, totalAmount, storeId } = req.body;
+        const { products, customerName, customerEmail, customerPhone, customerAddress, paymentMethod, totalAmount, storeId } = req.body;
 
         // Validate required fields
         const missingFields = [];
@@ -452,6 +452,7 @@ app.post('/api/orders', async (req, res) => {
         if (!customerName) missingFields.push('customerName');
         if (!customerEmail) missingFields.push('customerEmail');
         if (!customerAddress) missingFields.push('customerAddress');
+        if (!customerPhone) missingFields.push('customerPhone');
         if (!paymentMethod) missingFields.push('paymentMethod');
         if (!totalAmount) missingFields.push('totalAmount');
         if (!storeId) missingFields.push('storeId');
@@ -516,6 +517,7 @@ app.post('/api/orders', async (req, res) => {
             customerName: customerName.trim(),
             customerEmail: customerEmail.trim(),
             customerAddress: customerAddress.trim(),
+            customerPhone: customerPhone.trim(),
             paymentMethod,
             totalAmount,
             status: 'Pending'
@@ -555,7 +557,7 @@ app.get('/api/orders', async (req, res) => {
 
         const orders = await Order.find(query)
             .sort({ orderDate: -1 })
-            .populate('products.productId', 'name image'); // Populate product details
+            .populate('products.productId', 'name image price');
 
         res.json(orders);
     } catch (error) {
@@ -582,67 +584,6 @@ app.delete('/api/orders/:id', async (req, res) => {
         const { id } = req.params;
         await Order.findByIdAndDelete(id);
         res.json({ message: 'Order deleted successfully' });
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
-});
-
-app.get('/api/orders/analytics', async (req, res) => {
-    try {
-        const { storeId } = req.query;
-        let match = {};
-
-        if (storeId) {
-            match.storeId = new mongoose.Types.ObjectId(storeId);
-        }
-
-        const data = await Order.aggregate([
-            { $match: match },
-            {
-                $group: {
-                    _id: { $dateToString: { format: "%Y-%m-%d", date: "$orderDate" } },
-                    totalSales: { $sum: { $multiply: ["$price", "$quantity"] } },
-                    count: { $sum: 1 }
-                }
-            },
-            { $sort: { _id: 1 } },
-            { $limit: 30 }
-        ]);
-
-        res.json({
-            labels: data.map(item => item._id),
-            values: data.map(item => item.totalSales)
-        });
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
-});
-
-// Product analytics endpoint
-app.get('/api/products/analytics', async (req, res) => {
-    try {
-        const { storeId } = req.query;
-        let match = {};
-
-        if (storeId) {
-            match.storeId = new mongoose.Types.ObjectId(storeId);
-        }
-
-        const data = await Order.aggregate([
-            { $match: match },
-            {
-                $group: {
-                    _id: "$productId",
-                    productName: { $first: "$productName" },
-                    totalQuantity: { $sum: "$quantity" },
-                    totalSales: { $sum: { $multiply: ["$price", "$quantity"] } }
-                }
-            },
-            { $sort: { totalQuantity: -1 } },
-            { $limit: 5 }
-        ]);
-
-        res.json(data);
     } catch (error) {
         res.status(500).json({ error: error.message });
     }

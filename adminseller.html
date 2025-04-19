@@ -306,6 +306,7 @@
                         <th>Order ID</th>
                         <th>Product</th>
                         <th>Customer</th>
+                        <th>Phone</th>
                         <th>Price</th>
                         <th>Status</th>
                         <th>Date</th>
@@ -781,6 +782,7 @@
                     <td>${order._id.substring(0, 8)}...</td>
                     <td>${productNames}</td>
                     <td>${customerInfo}</td>
+                    <td>${order.customerPhone || 'N/A'}</td>
                     <td>₹${totalPrice.toFixed(2)}</td>
                     <td>
                         <select class="status-select" data-id="${order._id}">
