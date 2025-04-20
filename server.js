@@ -1,3 +1,4 @@
+require('dotenv').config();
 const { ObjectId } = require('mongoose').Types;
 const express = require('express');
 const mongoose = require('mongoose');
@@ -5,6 +6,7 @@ const cors = require('cors');
 const bodyParser = require('body-parser');
 const multer = require('multer');
 const path = require('path');
+const nodemailer = require('nodemailer');
 
 const app = express();
 const PORT = 3000;
@@ -17,7 +19,7 @@ app.use(cors({
 }));
 app.use(bodyParser.json());
 
-const mongoURI = 'mongodb+srv://rohitvaddepalli:oiKUkWyTbPW9KkdH@cluster0.xlefa4l.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0';
+const mongoURI = process.env.MONGO_URI;
 
 mongoose.connect(mongoURI, {
     useNewUrlParser: true,
@@ -25,6 +27,69 @@ mongoose.connect(mongoURI, {
 })
     .then(() => console.log('MongoDB connected'))
     .catch(err => console.log('MongoDB connection error:', err));
+
+// Email configuration
+const transporter = nodemailer.createTransport({
+    service: 'gmail', // Use 'gmail' service (auto-configures host/port)
+    auth: {
+        user: process.env.SMTP_USER,
+        pass: process.env.SMTP_PASS,
+    },
+    tls: {
+        rejectUnauthorized: false // Bypass SSL certificate validation (for testing)
+    }
+});
+
+// Test SMTP connection on server startup
+transporter.verify((error, success) => {
+    if (error) {
+        console.error('SMTP Connection Error:', error);
+    } else {
+        console.log('SMTP Server is ready to send emails');
+    }
+});
+
+// Function to send order confirmation email
+async function sendOrderConfirmationEmail(order) {
+    try {
+        const mailOptions = {
+            from: process.env.SMTP_FROM,
+            to: order.customerEmail,
+            subject: `Your Order Confirmation #${order._id}`,
+            html: `
+                    <h1>Thank you for your order!</h1>
+                    <p>Hello ${order.customerName},</p>
+                    <p>Your order has been received and is being processed.</p>
+                    
+                    <h2>Order Details</h2>
+                    <p><strong>Order ID:</strong> ${order._id}</p>
+                    <p><strong>Order Date:</strong> ${new Date(order.orderDate).toLocaleString()}</p>
+                    <p><strong>Total Amount:</strong> ₹${order.totalAmount.toFixed(2)}</p>
+                    <p><strong>Payment Method:</strong> ${order.paymentMethod}</p>
+                    
+                    <h3>Items Ordered</h3>
+                    <ul>
+                        ${order.products.map(item => `
+                            <li>
+                                ${item.name} - 
+                                ₹${item.price.toFixed(2)} x 
+                                ${item.quantity} = 
+                                ₹${(item.price * item.quantity).toFixed(2)}
+                            </li>
+                        `).join('')}
+                    </ul>
+                    
+                    <p>We'll notify you when your order ships.</p>
+                    <p>Thank you for shopping with us!</p>
+                `
+        };
+
+        await transporter.sendMail(mailOptions);
+        console.log('Order confirmation email sent to:', order.customerEmail);
+    } catch (error) {
+        console.error('Error sending order confirmation email:', error);
+    }
+}
 
 const User = mongoose.model('User', new mongoose.Schema({
     fullname: String,
@@ -458,7 +523,7 @@ app.post('/api/orders', async (req, res) => {
         if (!storeId) missingFields.push('storeId');
 
         if (missingFields.length > 0) {
-            return res.status(400).json({ 
+            return res.status(400).json({
                 error: 'Missing required fields',
                 missingFields
             });
@@ -494,13 +559,13 @@ app.post('/api/orders', async (req, res) => {
         for (const item of products) {
             const product = await Product.findById(item.productId);
             if (!product) {
-                return res.status(404).json({ 
-                    error: `Product not found: ${item.productName}` 
+                return res.status(404).json({
+                    error: `Product not found: ${item.productName}`
                 });
             }
             if (product.stock < item.quantity) {
-                return res.status(400).json({ 
-                    error: `Insufficient stock for ${item.productName}` 
+                return res.status(400).json({
+                    error: `Insufficient stock for ${item.productName}`
                 });
             }
         }
@@ -524,18 +589,19 @@ app.post('/api/orders', async (req, res) => {
         });
 
         await order.save();
-        
+
         // Update product stock levels
         for (const item of products) {
             await Product.findByIdAndUpdate(item.productId, {
                 $inc: { stock: -item.quantity }
             });
         }
+        sendOrderConfirmationEmail(order);
 
         res.status(201).json(order);
     } catch (error) {
         console.error('Error creating order:', error);
-        res.status(500).json({ 
+        res.status(500).json({
             error: 'Failed to create order',
             details: process.env.NODE_ENV === 'development' ? error.message : undefined
         });
