@@ -91,6 +91,65 @@ async function sendOrderConfirmationEmail(order) {
     }
 }
 
+// Add this function near your other email functions
+async function sendOtpEmail(email, otp, orderCode) {
+    try {
+        const mailOptions = {
+            from: process.env.SMTP_FROM,
+            to: email,
+            subject: `Delivery OTP for Order #${orderCode}`,
+            html: `
+                <h2>Your OTP for Order Delivery</h2>
+                <p>Your order is ready for delivery.</p>
+                <p>Please provide the following OTP to the delivery person:</p>
+                <h1 style="font-size: 32px; padding: 10px; background-color: #f0f0f0; text-align: center; letter-spacing: 5px;">${otp}</h1>
+                <p>This OTP is valid for the next 30 minutes.</p>
+                <p>Thank you for your order!</p>
+            `
+        };
+
+        await transporter.sendMail(mailOptions);
+        console.log('OTP email sent to:', email);
+        return true;
+    } catch (error) {
+        console.error('Error sending OTP email:', error);
+        return false;
+    }
+}
+
+// Add a new endpoint for sending OTP
+app.post('/api/orders/send-otp', async (req, res) => {
+    try {
+        const { orderId, customerEmail, orderCode } = req.body;
+
+        // Generate a random 6-digit OTP
+        const otp = Math.floor(100000 + Math.random() * 900000).toString();
+
+        // Send the OTP via email
+        const emailSent = await sendOtpEmail(customerEmail, otp, orderCode);
+
+        if (emailSent) {
+            res.status(200).json({
+                success: true,
+                message: 'OTP sent successfully',
+                otp: otp // In a production app, you would store this securely
+            });
+        } else {
+            res.status(500).json({
+                success: false,
+                message: 'Failed to send OTP'
+            });
+        }
+    } catch (error) {
+        console.error('Error in send-otp endpoint:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Server error while sending OTP',
+            error: error.message
+        });
+    }
+});
+
 const User = mongoose.model('User', new mongoose.Schema({
     fullname: String,
     email: String,
