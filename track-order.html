@@ -295,10 +295,9 @@
             <div class="order-products">
                 ${productsToRender.map(product => `
                     <div class="product-item">
-                        <img src="${product.productId?.image ? API_BASE_URL + product.productId.image : 'https://via.placeholder.com/60'}" 
+                        <img src="${product.image || 'https://via.placeholder.com/60'}" 
                              alt="${product.name || 'Product'}" 
-                             class="product-image"
-                             onerror="this.src='https://via.placeholder.com/60'">
+                             class="product-image">
                         <div class="product-info">
                             <div class="product-name">${product.name || 'Product'}</div>
                             <div class="product-price">

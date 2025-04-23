@@ -325,8 +325,41 @@
         let products = [];
         let currentStore = null;
         let orders = [];
-        document.addEventListener("DOMContentLoaded", async () => {
 
+        // Move this function outside the DOMContentLoaded event listener
+        function updateStoreDisplay() {
+            if (!currentStore) return;
+
+            const storeNameElement = document.getElementById('store-name');
+            const storeLinkElement = document.getElementById('store-link');
+            const storeLogoElement = document.getElementById('store-logo');
+
+            storeNameElement.textContent = currentStore.storeName || 'My Store';
+
+            const storeUrl = `${window.location.protocol}//${window.location.host}/store_customer.html?store=${currentStore._id || currentStore.id}`;
+            storeLinkElement.textContent = currentStore.storeName ?
+                `${currentStore.storeName.toLowerCase().replace(/\s+/g, '-')}.com` :
+                'my-store.com';
+            storeLinkElement.href = storeUrl;
+
+            if (currentStore.logoImage) {
+                storeLogoElement.src = currentStore.logoImage;
+                storeLogoElement.style.background = 'transparent';
+            } else {
+                storeLogoElement.src = 'images/store.png';
+                storeLogoElement.style.background = 'white';
+                storeLogoElement.textContent = currentStore.storeName ?
+                    currentStore.storeName.charAt(0).toUpperCase() : 'S';
+            }
+
+            const sidebarTitle = document.querySelector('.sidebar h2');
+            if (sidebarTitle && currentStore.storeName) {
+                sidebarTitle.textContent = currentStore.storeName;
+            }
+        }
+
+        document.addEventListener("DOMContentLoaded", async () => {
+            // Remove the updateStoreDisplay function from here
             await loadStoreData();
             fetchProducts();
 
@@ -757,12 +790,12 @@
         async function renderOrders() {
             const ordersBody = document.getElementById('orders-body');
             try {
-                ordersBody.innerHTML = '<tr><td colspan="7">Loading orders...</td></tr>';
+                ordersBody.innerHTML = '<tr><td colspan="8">Loading orders...</td></tr>';
 
                 const orders = await fetchOrders();
 
                 if (!orders || !Array.isArray(orders) || orders.length === 0) {
-                    ordersBody.innerHTML = '<tr><td colspan="7">No orders found for this store</td></tr>';
+                    ordersBody.innerHTML = '<tr><td colspan="8">No orders found for this store</td></tr>';
                     return;
                 }
 
@@ -822,7 +855,7 @@
 
             } catch (error) {
                 console.error('Error rendering orders:', error);
-                ordersBody.innerHTML = '<tr><td colspan="7">Error loading orders. Please try again.</td></tr>';
+                ordersBody.innerHTML = '<tr><td colspan="8">Error loading orders. Please try again.</td></tr>';
             }
         }
 
