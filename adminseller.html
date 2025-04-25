@@ -213,7 +213,7 @@
 <body>
     <div class="dashboard">
         <div class="sidebar">
-            <h2>My Store</h2>
+            <h2>Marketplace</h2>
             <nav>
                 <ul class="nav-list">
                     <li class="nav-item" data-section="store-front">Store Front</li>
@@ -334,7 +334,7 @@
             const storeLinkElement = document.getElementById('store-link');
             const storeLogoElement = document.getElementById('store-logo');
 
-            storeNameElement.textContent = currentStore.storeName || 'My Store';
+            storeNameElement.textContent = currentStore.storeName || 'Marketplace';
 
             const storeUrl = `${window.location.protocol}//${window.location.host}/store_customer.html?store=${currentStore._id || currentStore.id}`;
             storeLinkElement.textContent = currentStore.storeName ?
@@ -411,7 +411,7 @@
                 const storeLinkElement = document.getElementById('store-link');
                 const storeLogoElement = document.getElementById('store-logo');
 
-                storeNameElement.textContent = currentStore.storeName || 'My Store';
+                storeNameElement.textContent = currentStore.storeName || 'Marketplace';
 
                 const storeUrl = `${window.location.protocol}//${window.location.host}/store_customer.html?store=${currentStore._id || currentStore.id}`;
                 storeLinkElement.textContent = currentStore.storeName ?
